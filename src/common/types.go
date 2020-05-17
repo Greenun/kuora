@@ -4,39 +4,41 @@ import "time"
 
 type NodeAddress string
 
-type code int
+type Code int
 
 type Offset uint64
-type ChunkHandle uint64
+type BlockHandle uint64
 type Checksum int64
-type ChunkIndex int32
+type BlockIndex int32
+type BlockVersion int32
 
 type HotKey string
 type ColdKey string
 type Filename string
 
-type Lease struct {
-	primary NodeAddress
-	secondaries []NodeAddress
-	expired time.Time
-}
+type NodeType int
+
+const (
+	HOT = iota
+	COLD
+)
 
 type Error struct {
-	errCode code
-	errMsg string
+	errCode Code
+	errMsg  string
 }
 
-func (e *Error) Error() (code, string) {
+func (e *Error) Error() (Code, string) {
 	return e.errCode, e.errMsg
 }
 
 // config
-
 const (
 	ReplicaNum = 3
+	ColdReplicaNum = 1
 	ChunkSize = 1 << 19 // 512KB
-	GarbageTag = "__deleted"
 
 	HeartBeatInterval = 500 * time.Millisecond
+	GarbageCollectionInterval = 30 * time.Second // temp
 
 )
