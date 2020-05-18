@@ -7,6 +7,7 @@ import (
 	logger "github.com/Sirupsen/logrus"
 	"io"
 	"master/manager"
+	"math"
 	"net"
 	"net/rpc"
 )
@@ -59,7 +60,7 @@ func (m *MasterNode) init() {
 	m.dataNodeManager = manager.NewDataNodeManager()
 }
 
-func (m *MasterNode) GetFileMetadata(args ipc.GetMetadataArgs, response ipc.GetMetadataResponse) error {
+func (m *MasterNode) GetFileMetadata(args ipc.GetMetadataArgs, response *ipc.GetMetadataResponse) error {
 	m.blockManager.RLock()
 	defer m.blockManager.RUnlock()
 
@@ -83,7 +84,7 @@ func (m *MasterNode) GetFileMetadata(args ipc.GetMetadataArgs, response ipc.GetM
 	return nil
 }
 
-func (m *MasterNode) GetBlockInfo(args ipc.GetBlockInfoArgs, response ipc.GetBlockInfoResponse) error {
+func (m *MasterNode) GetBlockInfo(args ipc.GetBlockInfoArgs, response *ipc.GetBlockInfoResponse) error {
 	handle := args.Handle
 
 	m.blockManager.RLock()
@@ -101,8 +102,8 @@ func (m *MasterNode) GetBlockInfo(args ipc.GetBlockInfoArgs, response ipc.GetBlo
 	return nil
 }
 
-func (m *MasterNode) HeartbeatResponse(args ipc.HeartBeatArgs, response ipc.HeartBeatResponse) error {
-	m.dataNodeManager.Heartbeat(args.Address, args.DNType, &response)
+func (m *MasterNode) HeartbeatResponse(args ipc.HeartBeatArgs, response *ipc.HeartBeatResponse) error {
+	m.dataNodeManager.Heartbeat(args.Address, args.DNType, response)
 	//if nodeType == common.HOT {
 	//
 	//} else if nodeType == common.COLD {
@@ -111,5 +112,24 @@ func (m *MasterNode) HeartbeatResponse(args ipc.HeartBeatArgs, response ipc.Hear
 	//	return fmt.Errorf("UNVALID NODE TYPE")
 	//}
 
+	return nil
+}
+
+func (m *MasterNode) CreateFile(args ipc.CreateFileArgs, response *ipc.CreateFileResponse) error {
+	length := args.Length
+	blockNum := int(math.Ceil(float64(length) / float64(common.BlockSize)))
+	//selectedNodes, err := m.dataNodeManager.SelectReplication(common.ReplicaNum)
+	selectedNodes, err := m.dataNodeManager.SelectReplication(1)
+	if err != nil {
+		logger.Errorf("ERROR DURING CREATE FILE: %v", err)
+		return err
+	}
+	key, _, opErr := m.blockManager.CreateBlocks(selectedNodes, blockNum)
+	if opErr != nil {
+		response.ErrCode = 1
+		return opErr
+	}
+	response.Key = key
+	response.ErrCode = 0 // temp
 	return nil
 }

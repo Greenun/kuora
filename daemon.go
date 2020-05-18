@@ -10,37 +10,14 @@ import (
 	"os"
 )
 
-func runMaster() {
-	if len(os.Args) < 4 {
-		fmt.Println("Not Enough Arguments for Master")
-		return
-	}
-	address := common.NodeAddress(os.Args[2])
-	rootDir := os.Args[3]
-
+func runMaster(address common.NodeAddress, rootDir string) {
 	master.Run(address, rootDir)
 
 	ch := make(chan bool, 1)
 	<- ch
 }
 
-func runDataNode() {
-	if len(os.Args) < 6 {
-		fmt.Println("Not Enough Arguments for DataNode")
-		return
-	}
-	address := common.NodeAddress(os.Args[2])
-	rootDir := os.Args[3]
-	masterAddress := common.NodeAddress(os.Args[4])
-	var nodeType common.NodeType
-	if os.Args[5] == "hot" {
-		nodeType = common.HOT
-	} else if os.Args[5] == "cold" {
-		nodeType = common.COLD
-	} else {
-		fmt.Println("Node Type Must Be cold or hot")
-		return
-	}
+func runDataNode(address, masterAddress common.NodeAddress, rootDir string, nodeType common.NodeType) {
 	datanode.Run(rootDir, address, masterAddress, nodeType)
 
 	ch := make(chan bool, 1)
@@ -53,9 +30,32 @@ func main() {
 		return
 	}
 	if os.Args[1] == "master" {
-		runMaster()
+		if len(os.Args) < 4 {
+			fmt.Println("Not Enough Arguments for Master")
+			return
+		}
+		address := common.NodeAddress(os.Args[2])
+		rootDir := os.Args[3]
+		runMaster(address, rootDir)
+
 	} else if os.Args[1] == "datanode" {
-		runDataNode()
+		if len(os.Args) < 6 {
+			fmt.Println("Not Enough Arguments for DataNode")
+			return
+		}
+		address := common.NodeAddress(os.Args[2])
+		masterAddress := common.NodeAddress(os.Args[3])
+		rootDir := os.Args[4]
+		var nodeType common.NodeType
+		if os.Args[5] == "hot" {
+			nodeType = common.HOT
+		} else if os.Args[5] == "cold" {
+			nodeType = common.COLD
+		} else {
+			fmt.Errorf("INVALID NODE TYPE")
+			return
+		}
+		runDataNode(address, masterAddress, rootDir, nodeType)
 	} else {
 		fmt.Println("Invalid Arguments")
 	}

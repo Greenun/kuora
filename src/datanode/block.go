@@ -20,11 +20,11 @@ type Block struct {
 }
 
 func BlockFileFormat(rootDir string, handle common.BlockHandle) string {
-	return path.Join(rootDir, fmt.Sprint("Block_%v.blk", handle))
+	return path.Join(rootDir, fmt.Sprintf("Block_%v.blk", handle))
 }
 
-func CreateBlockFile(filename string) error {
-	_, err := os.OpenFile(filename, os.O_CREATE, BlockPermission)
+func createBlockFile(filename string) error {
+	_, err := os.OpenFile(filename, os.O_CREATE | os.O_WRONLY, BlockPermission)
 	if err != nil {
 		return err
 	}

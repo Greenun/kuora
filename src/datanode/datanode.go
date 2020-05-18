@@ -3,6 +3,7 @@ package datanode
 import (
 	"common"
 	"common/ipc"
+	"fmt"
 	"io"
 	"net"
 	"net/rpc"
@@ -102,7 +103,7 @@ func (d *DataNode) Heartbeat() error {
 	return nil
 }
 
-func (d *DataNode) CreateBlock(args ipc.CreateBlockArgs, response ipc.CreateBlockResponse ) error {
+func (d *DataNode) CreateBlock(args ipc.CreateBlockArgs, response *ipc.CreateBlockResponse ) error {
 	d.Lock()
 	defer d.Unlock()
 	// temp
@@ -115,7 +116,8 @@ func (d *DataNode) CreateBlock(args ipc.CreateBlockArgs, response ipc.CreateBloc
 	//files := make([]string, len(args.Handles))
 	for _, handle := range args.Handles {
 		//files = append(files, BlockFileFormat(d.rootDir, handle))
-		osErr := CreateBlockFile(BlockFileFormat(d.rootDir, handle))
+		logger.Infof("Format: %s", BlockFileFormat(d.rootDir, handle))
+		osErr := createBlockFile(BlockFileFormat(d.rootDir, handle))
 		if osErr != nil {
 			logger.Errorf("ERROR OCCURRED DURING CREATE FILE: %d\n%v", handle, osErr.Error())
 			return osErr
@@ -125,16 +127,46 @@ func (d *DataNode) CreateBlock(args ipc.CreateBlockArgs, response ipc.CreateBloc
 	return nil
 }
 
-func (d *DataNode) ReadBlock(args ipc.ReadBlockArgs, response ipc.ReadBlockResponse) error {
+func (d *DataNode) ReadBlock(args ipc.ReadBlockArgs, response *ipc.ReadBlockResponse) error {
+	handle := args.Handle
+	d.RLock()
+	defer d.RUnlock()
+	blockInfo, exist := d.blockMap[handle]
+	if !exist {
+		return fmt.Errorf("BLOCK %d DOES NOT EXIST", handle)
+	}
+	// read file
+	filename := BlockFileFormat(d.rootDir, handle)
+	data := make([]byte, args.Length)
+	blockInfo.RLock()
+	_, err := d.readFile(filename, args.Offset, data)
+	blockInfo.RUnlock()
 
+	if err != nil {
+		if err == io.EOF {
+			response.ErrCode = 100 // temp
+			return nil
+		}
+		return err
+	}
 	return nil
 }
 
-func (d *DataNode) WriteBlock(args ipc.WriteBlockArgs, response ipc.WriteBlockResponse) error {
+func (d *DataNode) readFile(filename string, offset common.Offset, data []byte) (int, error) {
+	fd, err := os.Open(filename)
+	if err != nil {
+		logger.Errorf("ERROR DURING READFILE OPERATION: %v", err)
+		return -1, err
+	}
+	defer fd.Close()
+	return fd.ReadAt(data, int64(offset))
+}
+
+func (d *DataNode) WriteBlock(args ipc.WriteBlockArgs, response *ipc.WriteBlockResponse) error {
 	return nil
 }
 
-func (d *DataNode) ForwardBlockData(args ipc.ForwardDataArgs, response ipc.ForwardDataResponse) error {
+func (d *DataNode) ForwardBlockData(args ipc.ForwardDataArgs, response *ipc.ForwardDataResponse) error {
 	return nil
 }
 

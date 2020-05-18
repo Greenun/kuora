@@ -43,6 +43,7 @@ func (manager *DataNodeManager) Heartbeat(address common.NodeAddress, nodeType c
 			return true
 		} else {
 			// copy garbage info
+			//logger.Infof("Last beat: %v", manager.HotNodes[address].LastBeat)
 			response.Garbage = nodeInfo.Garbage
 			manager.HotNodes[address].Garbage = make([]common.BlockHandle, 0)
 			manager.HotNodes[address].LastBeat = time.Now()
@@ -99,4 +100,24 @@ func (manager *DataNodeManager) SelectReReplication(number int, block common.Blo
 	// select server for re-replication
 	// do not have specific block
 	return nil, nil // temp
+}
+
+func (manager *DataNodeManager) HealthCheckNodes() map[common.NodeType][]common.NodeAddress {
+	manager.RLock()
+	defer manager.RUnlock()
+
+	deadNodes := make(map[common.NodeType][]common.NodeAddress)
+	currentTime := time.Now()
+	for addr, info := range manager.HotNodes {
+		if info.LastBeat.Add(common.HeartBeatTimeout).Before(currentTime) {
+			deadNodes[common.HOT] = append(deadNodes[common.HOT], addr)
+		}
+	}
+
+	for addr, info := range manager.ColdNodes {
+		if info.LastBeat.Add(common.HeartBeatTimeout).Before(currentTime) {
+			deadNodes[common.COLD] = append(deadNodes[common.COLD], addr)
+		}
+	}
+	return deadNodes
 }

@@ -36,9 +36,10 @@ func (e *Error) Error() (Code, string) {
 const (
 	ReplicaNum = 3
 	ColdReplicaNum = 1
-	ChunkSize = 1 << 19 // 512KB
+	BlockSize = 1 << 19 // 512KB
 
 	HeartBeatInterval = 500 * time.Millisecond
 	GarbageCollectionInterval = 30 * time.Second // temp
+	HeartBeatTimeout = 5 * time.Second
 
 )
