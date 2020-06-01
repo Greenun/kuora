@@ -62,6 +62,7 @@ func (blockManager *BlockManager) CreateBlocks(addrs []common.NodeAddress,
 
 	rpcErrors := map[common.NodeAddress][]error{}
 	rpcSucceed := map[common.NodeAddress][]ipc.CreateBlockResponse{}
+	// NEED TO SET PRIMARY!!!!!!!!!
 
 	for _, addr := range addrs {
 		var response ipc.CreateBlockResponse

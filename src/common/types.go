@@ -28,6 +28,12 @@ type Error struct {
 	errMsg  string
 }
 
+// error code
+const (
+	ReadEOF = 400 + iota
+
+)
+
 func (e *Error) Error() (Code, string) {
 	return e.errCode, e.errMsg
 }

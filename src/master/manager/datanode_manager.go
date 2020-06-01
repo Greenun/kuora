@@ -17,6 +17,7 @@ type DataNodeManager struct {
 }
 
 func NewDataNodeManager() *DataNodeManager {
+	logger.Info("INIT NEW DATANODE MANAGER")
 	dataNodeManager := &DataNodeManager{
 		HotNodes:   make(map[common.NodeAddress]*Node),
 		ColdNodes:   make(map[common.NodeAddress]*Node),
@@ -120,4 +121,8 @@ func (manager *DataNodeManager) HealthCheckNodes() map[common.NodeType][]common.
 		}
 	}
 	return deadNodes
+}
+
+func (manager *DataNodeManager) RemoveNode(address common.NodeAddress) ([]common.BlockHandle, error) {
+	return nil, nil // temp
 }

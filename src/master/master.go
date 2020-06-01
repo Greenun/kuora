@@ -116,10 +116,11 @@ func (m *MasterNode) HeartbeatResponse(args ipc.HeartBeatArgs, response *ipc.Hea
 }
 
 func (m *MasterNode) CreateFile(args ipc.CreateFileArgs, response *ipc.CreateFileResponse) error {
+	logger.Info("Create File Operation")
 	length := args.Length
 	blockNum := int(math.Ceil(float64(length) / float64(common.BlockSize)))
 	//selectedNodes, err := m.dataNodeManager.SelectReplication(common.ReplicaNum)
-	selectedNodes, err := m.dataNodeManager.SelectReplication(1)
+	selectedNodes, err := m.dataNodeManager.SelectReplication(2)
 	if err != nil {
 		logger.Errorf("ERROR DURING CREATE FILE: %v", err)
 		return err
