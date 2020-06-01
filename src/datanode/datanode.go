@@ -158,7 +158,7 @@ func (d *DataNode) ReadBlock(args ipc.ReadBlockArgs, response *ipc.ReadBlockResp
 func (d *DataNode) readFile(filename string, offset common.Offset, data []byte) (int, error) {
 	fd, err := os.Open(filename)
 	if err != nil {
-		logger.Errorf("ERROR DURING READFILE OPERATION: %v", err)
+		logger.Errorf("ERROR DURING READ FILE OPERATION: %v", err)
 		return -1, err
 	}
 	defer fd.Close()
@@ -166,7 +166,42 @@ func (d *DataNode) readFile(filename string, offset common.Offset, data []byte) 
 }
 
 func (d *DataNode) WriteBlock(args ipc.WriteBlockArgs, response *ipc.WriteBlockResponse) error {
+	filename := BlockFileFormat(d.rootDir, args.Handle)
+	d.RLock()
+	blockInfo := d.blockMap[args.Handle]
+	d.RUnlock()
+
+	editLength := args.Offset + common.Offset(len(args.Data))
+	if editLength > common.BlockSize {
+		logger.Errorf("BLOCK %d SIZE EXCEEDED", args.Handle)
+		return fmt.Errorf("BLOCK SIZE EXCEEDED")
+	}
+		if editLength > common.Offset(blockInfo.length) {
+		blockInfo.length = uint64(editLength)
+	}
+	blockInfo.Lock()
+	_, err := d.writeFile(filename, args.Offset, args.Data)
+	blockInfo.Unlock()
+
+	if err != nil {
+		return fmt.Errorf("BLOCK FILE WRITE ERROR")
+	}
+
 	return nil
+}
+
+func  (d *DataNode) writeFile(filename string, offset common.Offset, data []byte) (int, error) {
+	file, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE, 0744)
+	if err != nil {
+		return -1, fmt.Errorf("ERROR OCCURRED - %s", err.Error())
+	}
+	defer file.Close()
+	n, err := file.WriteAt(data, int64(offset)) // uint64 --> int64 ..
+	if err != nil {
+		return -1, fmt.Errorf("ERROR OCCURRED - %s", err.Error())
+	}
+
+	return n, nil
 }
 
 func (d *DataNode) ForwardBlockData(args ipc.ForwardDataArgs, response *ipc.ForwardDataResponse) error {

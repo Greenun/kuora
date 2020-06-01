@@ -14,11 +14,14 @@ type CreateBlockResponse struct {
 }
 
 type WriteBlockArgs struct {
-
+	Handle common.BlockHandle
+	Data []byte
+	Offset common.Offset
+	Secondaries []common.NodeAddress
 }
 
 type WriteBlockResponse struct {
-
+	ErrCode common.Code
 }
 
 type ForwardDataArgs struct {

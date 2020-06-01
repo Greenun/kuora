@@ -14,7 +14,6 @@ type BlockVersion int32
 
 type HotKey string
 type ColdKey string
-type Filename string
 
 type NodeType int
 
