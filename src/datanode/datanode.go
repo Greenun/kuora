@@ -187,6 +187,18 @@ func (d *DataNode) WriteBlock(args ipc.WriteBlockArgs, response *ipc.WriteBlockR
 		return fmt.Errorf("BLOCK FILE WRITE ERROR")
 	}
 
+	// forward block
+	if len(args.Secondaries) > 0 {
+		// need to separate it from sync
+		forwardResult := make(chan error, len(args.Secondaries))
+		for _, t := range args.Secondaries {
+			go func(target common.NodeAddress){
+				forwardResult <- d.forwardBlockData(target, args.Data, args.Handle, args.Offset)
+			}(t)
+
+		}
+		<- forwardResult // temp
+	}
 	return nil
 }
 
@@ -204,9 +216,44 @@ func  (d *DataNode) writeFile(filename string, offset common.Offset, data []byte
 	return n, nil
 }
 
-func (d *DataNode) ForwardBlockData(args ipc.ForwardDataArgs, response *ipc.ForwardDataResponse) error {
+func (d *DataNode) forwardBlockData(target common.NodeAddress, data []byte,
+	handle common.BlockHandle, offset common.Offset) error {
+	writeArgs := ipc.WriteBlockArgs{
+		Handle:      handle,
+		Data:        data,
+		Offset:      offset,
+		Secondaries: nil,
+	}
+	var resp ipc.WriteBlockResponse
+	err := ipc.Single(target, "DataNode.WriteBlock", writeArgs, &resp)
+	if err != nil {
+		return err
+	}
 	return nil
 }
+
+//func (d *DataNode) ForwardBlockData(args ipc.ForwardDataArgs, response *ipc.ForwardDataResponse) error {
+//	forwardResult := make(chan bool, len(args.Target))
+//	for _, t := range args.Target {
+//		go func(data []byte, target common.NodeAddress){
+//			writeArgs := ipc.WriteBlockArgs{
+//				Handle: args.Handle,
+//				Data: args.Data,
+//				Secondaries: nil,
+//			}
+//			var resp ipc.WriteBlockResponse
+//			err := ipc.Single(target, "DataNode.WriteBlock", writeArgs, &resp)
+//			if err != nil {
+//				forwardResult <- false
+//			} else {
+//				forwardResult <- true
+//			}
+//		}(args.Data, t)
+//	}
+//
+//	logger.Infof("Forward Result: %s", <- forwardResult) // temp
+//	return nil
+//}
 
 func (d *DataNode) GarbageCollection() error {
 	logger.Infof("Garbage Collection For %d blocks", len(d.garbage))

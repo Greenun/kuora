@@ -127,6 +127,71 @@ func (c *Client) ReadBlock(handle common.BlockHandle, offset common.Offset, buff
 }
 
 func (c *Client) Write(key common.HotKey, offset common.Offset, data []byte) error {
+	handles, err := c.GetMetadata(key)
+	if err != nil {
+		return err
+	}
+	if offset / common.BlockSize > common.Offset(len(handles)) {
+		return fmt.Errorf("WRITE OFFSET EXCEEDS FILE LENGTH")
+	}
+
+	var current int = 0
+	for current < len(data) {
+		blockIndex := offset / common.BlockSize
+		innerOffset := offset % common.BlockSize
+
+		handle := handles[blockIndex]
+		blockMargin := int(common.BlockSize - innerOffset)
+		var written int
+		if current + blockMargin > len(data) {
+			written = len(data) - current
+		} else {
+			written = blockMargin
+		}
+
+		for i := 0; i < 3; i++ {
+			err = c.WriteBlock(handle, innerOffset, data[current:current+written])
+			if err != nil {
+				logger.Errorf("ERROR DURING WRITE BLOCK - %s", err.Error())
+			} else {
+				break
+			}
+		}
+		if err != nil {
+			return err
+		}
+		offset += common.Offset(written)
+		current += written
+	}
+
+	return nil
+}
+
+func (c *Client) WriteBlock(handle common.BlockHandle, offset common.Offset, data []byte) error {
+	if common.Offset(len(data)) + offset > common.BlockSize {
+		return fmt.Errorf("OFFSET + DATA LENGTH EXCEEDS BLOCK SIZE")
+	}
+	var resp ipc.GetBlockInfoResponse
+	err := ipc.Single(c.master, "Master.GetBlockInfo", ipc.GetBlockInfoArgs{Handle:handle}, &resp)
+	if err != nil {
+		logger.Errorf("ERROR OCCURRED DURING GetBlockInfo RPC")
+		return err
+	}
+	var writeResp ipc.WriteBlockResponse
+	secondaries, err := common.RemoveAddress(resp.Locations, resp.Primary)
+	if err != nil {
+		return fmt.Errorf("PRIMARY DOES NOT EXIST IN LOCATIONS")
+	}
+
+	writeErr := ipc.Single(resp.Primary, "DataNode.WriteBlock", ipc.WriteBlockArgs{
+		Handle:      handle,
+		Data:        data,
+		Offset:      offset,
+		Secondaries: secondaries,
+	}, &writeResp)
+	if writeErr != nil {
+		return fmt.Errorf("WRITE BLOCK OPERATION ERROR")
+	}
 	return nil
 }
 

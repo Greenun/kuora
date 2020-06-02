@@ -25,11 +25,13 @@ type WriteBlockResponse struct {
 }
 
 type ForwardDataArgs struct {
-
+	Handle common.BlockHandle
+	Data []byte
+	Target []common.NodeAddress
 }
 
 type ForwardDataResponse struct {
-
+	ErrCode common.Code
 }
 
 type ReadBlockArgs struct {
@@ -58,7 +60,7 @@ type HeartBeatResponse struct {
 // key-value based
 
 type ListKeysArgs struct {
-	Limit int // how many files
+	Limit int // how many keys
 }
 
 type ListKeysResponse struct {

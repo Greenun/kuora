@@ -134,3 +134,8 @@ func (m *MasterNode) CreateFile(args ipc.CreateFileArgs, response *ipc.CreateFil
 	response.ErrCode = 0 // temp
 	return nil
 }
+
+func (m *MasterNode) DeleteFile(args ipc.DeleteFileArgs, response *ipc.DeleteFileResponse) error {
+	
+	return nil
+}
