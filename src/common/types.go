@@ -55,5 +55,7 @@ const (
 	HealthCheckInterval = 4*HeartBeatInterval
 	ExpireInterval = 60 * time.Second // temp
 
+
+	ExpireTime = 3 * time.Minute
 	MaxRetry = 3
 )

@@ -120,6 +120,7 @@ func (m *MasterNode) GetBlockInfo(args ipc.GetBlockInfoArgs, response *ipc.GetBl
 
 	m.blockManager.RLock()
 	blockInfo, exist := m.blockManager.Blocks[handle]
+	logger.Infof("Block Information - %v", blockInfo)
 	m.blockManager.RUnlock()
 	if !exist {
 		return fmt.Errorf("BLOCK %d NOT EXIST", handle)
@@ -222,6 +223,7 @@ func (m *MasterNode) healthCheck() error {
 		logger.Infof("Sweep Block Phase")
 		m.blockManager.SweepBlocks(handles, coldDead)
 	}
+	return nil
 }
 
 func (m *MasterNode) ListKeys(args ipc.ListKeysArgs, response *ipc.ListKeysResponse) error {

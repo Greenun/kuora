@@ -27,6 +27,7 @@ func runDataNode(address, masterAddress common.NodeAddress, rootDir string, node
 func main() {
 	logger.SetLevel(logger.DebugLevel)
 	if len(os.Args) < 2 {
+		fmt.Println("Insufficient Arguments")
 		return
 	}
 	if os.Args[1] == "master" {
@@ -58,5 +59,6 @@ func main() {
 		runDataNode(address, masterAddress, rootDir, nodeType)
 	} else {
 		fmt.Println("Invalid Arguments")
+		return
 	}
 }

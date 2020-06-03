@@ -18,23 +18,23 @@ func NewClient(address common.NodeAddress) *Client{
 	return c
 }
 
-func (c *Client) Create(length uint64) error {
+func (c *Client) Create(length uint64) (common.HotKey, error) {
 	var response ipc.CreateFileResponse
 	args := ipc.CreateFileArgs{Length:length}
 	err := ipc.Single(c.master, "MasterNode.CreateFile", args, &response)
 	if err != nil {
 		logger.Error("CREATE ERROR")
-		return err
+		return "", err
 	}
 	fileKey := response.Key
 	logger.Infof("File Key: %s -- %d", fileKey, response.ErrCode)
 
-	return nil
+	return fileKey, nil
 }
 
 func (c *Client) GetMetadata(key common.HotKey) ([]common.BlockHandle, error){
 	var getMetadata ipc.GetMetadataResponse
-	err := ipc.Single(c.master, "MasterNode.GetMetadata", ipc.GetMetadataArgs{FileKey: key}, getMetadata)
+	err := ipc.Single(c.master, "MasterNode.GetFileMetadata", ipc.GetMetadataArgs{FileKey: key}, &getMetadata)
 	if err != nil {
 		// handle error
 		return nil, err
@@ -42,15 +42,15 @@ func (c *Client) GetMetadata(key common.HotKey) ([]common.BlockHandle, error){
 	return getMetadata.BlockHandles, nil
 }
 
-func (c *Client) Read(key common.HotKey, offset common.Offset, buffer []byte) (int64, error) {
+func (c *Client) Read(key common.HotKey, offset common.Offset, buffer []byte) (int64, []byte, error) {
 	handles, err := c.GetMetadata(key)
 	if err != nil {
-		return -1, err
+		return -1, nil, err
 	}
 	if int(offset / common.BlockSize) > len(handles) {
-		return -1, fmt.Errorf("OFFSET EXCEED FILE LENGTH")
+		return -1, nil, fmt.Errorf("OFFSET EXCEED FILE LENGTH")
 	}
-	totalData := make([]byte, len(buffer))
+	totalData := make([]byte, 0)
 	var current int64 = 0
 	// read for length of buffer
 	for current < int64(len(buffer)) {
@@ -58,14 +58,14 @@ func (c *Client) Read(key common.HotKey, offset common.Offset, buffer []byte) (i
 		blockOffset := offset % common.BlockSize
 
 		if int(idx) >= len(handles) {
-			return -1, fmt.Errorf("Read after EOF Error")
+			return -1, nil, fmt.Errorf("Read after EOF Error")
 		}
 
 		handle := handles[idx]
 		readNum, err := c.ReadBlock(handle, blockOffset, buffer)
 
 		if err != nil {
-			return -1, fmt.Errorf("Read Error")
+			return -1, nil, fmt.Errorf("Read Error")
 		}
 
 		current += readNum
@@ -73,7 +73,7 @@ func (c *Client) Read(key common.HotKey, offset common.Offset, buffer []byte) (i
 		totalData = append(totalData, buffer[:readNum]...)
 	}
 	logger.Info(totalData) // temp
-	return current, nil
+	return current, totalData, nil
 }
 
 
@@ -114,6 +114,7 @@ func (c *Client) ReadBlock(handle common.BlockHandle, offset common.Offset, buff
 			// temp
 			logger.Errorf("ERROR OCCURRED DURING READ BLOCK %d from %s", handle, locations[randomIndex])
 		} else {
+			copy(buffer, readResponse.Data) // dump bytes
 			break
 		}
 	}
@@ -182,7 +183,7 @@ func (c *Client) WriteBlock(handle common.BlockHandle, offset common.Offset, dat
 	if err != nil {
 		return fmt.Errorf("PRIMARY DOES NOT EXIST IN LOCATIONS")
 	}
-
+	logger.Infof("Primary Address - %s", resp.Primary)
 	writeErr := ipc.Single(resp.Primary, "DataNode.WriteBlock", ipc.WriteBlockArgs{
 		Handle:      handle,
 		Data:        data,
@@ -190,9 +191,24 @@ func (c *Client) WriteBlock(handle common.BlockHandle, offset common.Offset, dat
 		Secondaries: secondaries,
 	}, &writeResp)
 	if writeErr != nil {
-		return fmt.Errorf("WRITE BLOCK OPERATION ERROR")
+		return fmt.Errorf("WRITE BLOCK OPERATION ERROR - %s", writeErr.Error())
 	}
 	return nil
+}
+
+// debug
+func (c *Client) CreateAndWrite(data []byte) (common.HotKey, error) {
+	length := uint64(len(data))
+	key, createErr := c.Create(length)
+	if createErr != nil {
+		return "", fmt.Errorf("ERROR OCCURRED DURING CREATE FILE - %s", createErr.Error())
+	}
+	writeErr := c.Write(key, 0, data)
+	if writeErr != nil {
+		return "", fmt.Errorf("ERROR OCCURRED DURING WRITE FILE - %s", writeErr.Error())
+	}
+
+	return key, nil
 }
 
 func (c *Client) Delete(key common.HotKey) error {

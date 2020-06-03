@@ -1,6 +1,7 @@
 package client
 
 import (
+	"bytes"
 	"common"
 	"testing"
 )
@@ -19,3 +20,22 @@ func TestClient_Create(t *testing.T) {
 //}
 
 
+func TestFlow(t *testing.T) {
+	l1 := int64(10)
+	//l2 := int64(1 << 12)
+	//l3 := int64(1 << 20 + 1)
+
+	randomBytes := common.GenerateRandomData(l1)
+	t.Logf("Bytes: %v", randomBytes)
+	key, err := c.CreateAndWrite(randomBytes)
+	if err != nil {
+		t.Errorf("Create And Write File Error - %s", err.Error())
+	}
+	t.Logf("File Key : %s", key)
+	buffer := make([]byte, l1)
+	data := make([]byte, l1)
+	_, data, _ = c.Read(key, 0, buffer)
+	t.Logf("Bytes: %v", data)
+	result := bytes.Compare(buffer, randomBytes)
+	t.Logf("Compare Result - %d", result) // result need to be 0
+}

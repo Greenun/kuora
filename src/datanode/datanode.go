@@ -122,8 +122,14 @@ func (d *DataNode) CreateBlock(args ipc.CreateBlockArgs, response *ipc.CreateBlo
 			logger.Errorf("ERROR OCCURRED DURING CREATE FILE: %d\n%v", handle, osErr.Error())
 			return osErr
 		}
+		d.blockMap[handle] = &Block{
+			length:0,
+			version:0,
+			corrupted:false,
+		}
 	}
 	response.ResponseCode = 0 // temp
+
 	return nil
 }
 
@@ -168,9 +174,11 @@ func (d *DataNode) readFile(filename string, offset common.Offset, data []byte) 
 func (d *DataNode) WriteBlock(args ipc.WriteBlockArgs, response *ipc.WriteBlockResponse) error {
 	filename := BlockFileFormat(d.rootDir, args.Handle)
 	d.RLock()
-	blockInfo := d.blockMap[args.Handle]
+	blockInfo, exist := d.blockMap[args.Handle]
 	d.RUnlock()
-
+	if !exist {
+		return fmt.Errorf("BLOCK DOES NOT EXIST - %d", args.Handle)
+	}
 	editLength := args.Offset + common.Offset(len(args.Data))
 	if editLength > common.BlockSize {
 		logger.Errorf("BLOCK %d SIZE EXCEEDED", args.Handle)

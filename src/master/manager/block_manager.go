@@ -5,6 +5,7 @@ import (
 	"common/ipc"
 	"fmt"
 	"sync"
+	"time"
 
 	logger "github.com/Sirupsen/logrus"
 )
@@ -60,26 +61,37 @@ func (blockManager *BlockManager) CreateBlocks(addrs []common.NodeAddress,
 	}
 	blockManager.Files[key] = file
 
-	rpcErrors := map[common.NodeAddress][]error{}
-	rpcSucceed := map[common.NodeAddress][]ipc.CreateBlockResponse{}
+	rpcErrors := map[common.NodeAddress]error{}
+	rpcSucceed := map[common.NodeAddress]ipc.CreateBlockResponse{}
 
 	for _, addr := range addrs {
 		var response ipc.CreateBlockResponse
 		// create block in datanode needs
-		err := ipc.Single(addr, "DataNode.CreateBlock", ipc.CreateBlockArgs{Handles:file.Blocks}, response)
+		err := ipc.Single(addr, "DataNode.CreateBlock", ipc.CreateBlockArgs{Handles:file.Blocks}, &response)
 		if err != nil {
-			rpcErrors[addr] = append(rpcErrors[addr], err)
+			rpcErrors[addr] = err
 		} else {
-			rpcSucceed[addr] = append(rpcSucceed[addr], response)
+			rpcSucceed[addr] = response
 		}
 	}
 	// set primary, locations
+	logger.Infof("%v", rpcSucceed)
+	logger.Infof("%v", rpcErrors)
 	for _, handle := range file.Blocks {
+		if _, ok := blockManager.Blocks[handle]; !ok {
+			blockManager.Blocks[handle] = &Block{
+				Expired:   time.Now().Add(common.ExpireTime),
+				Locations: make([]common.NodeAddress, 0),
+				Primary:   common.NodeAddress(""),
+			}
+		}
 		for k, _ := range rpcSucceed {
 			blockManager.Blocks[handle].Locations = append(blockManager.Blocks[handle].Locations, k)
 		}
 		blockManager.Blocks[handle].Primary = blockManager.Blocks[handle].Locations[0]
+		logger.Infof("Create Block Info - %v", blockManager.Blocks[handle])
 	}
+
 
 	return key, addrs, nil
 }
