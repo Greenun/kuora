@@ -33,6 +33,12 @@ const (
 
 )
 
+// Status
+const (
+	STABLE = 111 + iota
+	UNSTABLE
+)
+
 func (e *Error) Error() (Code, string) {
 	return e.errCode, e.errMsg
 }
@@ -47,4 +53,5 @@ const (
 	GarbageCollectionInterval = 30 * time.Second // temp
 	HeartBeatTimeout = 5 * time.Second
 
+	MaxRetry = 3
 )

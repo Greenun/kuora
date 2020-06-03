@@ -60,6 +60,17 @@ func (m *MasterNode) init() {
 	m.dataNodeManager = manager.NewDataNodeManager()
 }
 
+func (m *MasterNode) checkKey(key common.HotKey) (common.ColdKey, bool){
+	m.blockManager.RLock()
+	defer m.blockManager.RUnlock()
+	coldKey, exist := m.blockManager.KeySet[key]
+	if !exist {
+		return "", exist
+	} else {
+		return coldKey, exist
+	}
+}
+
 func (m *MasterNode) GetFileMetadata(args ipc.GetMetadataArgs, response *ipc.GetMetadataResponse) error {
 	m.blockManager.RLock()
 	defer m.blockManager.RUnlock()
@@ -136,6 +147,34 @@ func (m *MasterNode) CreateFile(args ipc.CreateFileArgs, response *ipc.CreateFil
 }
 
 func (m *MasterNode) DeleteFile(args ipc.DeleteFileArgs, response *ipc.DeleteFileResponse) error {
-	
+	coldKey, exist := m.checkKey(args.Key)
+	m.blockManager.RLock()
+	defer m.blockManager.RUnlock()
+
+	if exist {
+		// cold key search
+		logger.Infof("Search for %s", coldKey)
+	} else {
+		fileInfo, fileExist := m.blockManager.Files[args.Key]
+		if !fileExist {
+			return fmt.Errorf("ERROR DURING SEARCH FILE %s", args.Key)
+		}
+		for _, handle := range fileInfo.Blocks {
+			blockInfo, e := m.blockManager.Blocks[handle]
+			if !e {
+				logger.Errorf("BLOCK %d DOES NOT EXIST", handle)
+			}
+			m.dataNodeManager.Lock()
+			for _, dn := range blockInfo.Locations {
+				// add garbage
+				m.dataNodeManager.HotNodes[dn].Garbage = append(m.dataNodeManager.HotNodes[dn].Garbage, handle)
+			}
+			m.dataNodeManager.Unlock()
+			// block delete
+			delete(m.blockManager.Blocks, handle)
+		}
+		// delete key
+		delete(m.blockManager.Files, args.Key)
+	}
 	return nil
 }

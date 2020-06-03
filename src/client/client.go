@@ -148,8 +148,8 @@ func (c *Client) Write(key common.HotKey, offset common.Offset, data []byte) err
 		} else {
 			written = blockMargin
 		}
-
-		for i := 0; i < 3; i++ {
+		// three times
+		for i := 0; i < common.MaxRetry; i++ {
 			err = c.WriteBlock(handle, innerOffset, data[current:current+written])
 			if err != nil {
 				logger.Errorf("ERROR DURING WRITE BLOCK - %s", err.Error())
@@ -196,6 +196,7 @@ func (c *Client) WriteBlock(handle common.BlockHandle, offset common.Offset, dat
 }
 
 func (c *Client) Delete(key common.HotKey) error {
+
 	return nil
 }
 
