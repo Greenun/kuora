@@ -52,6 +52,15 @@ func Run(address common.NodeAddress, rootDir string) *MasterNode {
 		}
 	}()
 
+	// background task
+	go func(){
+		for {
+			select {
+
+			}
+		}
+	}()
+
 	return masterNode
 }
 
@@ -154,6 +163,8 @@ func (m *MasterNode) DeleteFile(args ipc.DeleteFileArgs, response *ipc.DeleteFil
 	if exist {
 		// cold key search
 		logger.Infof("Search for %s", coldKey)
+
+
 	} else {
 		fileInfo, fileExist := m.blockManager.Files[args.Key]
 		if !fileExist {
@@ -167,7 +178,7 @@ func (m *MasterNode) DeleteFile(args ipc.DeleteFileArgs, response *ipc.DeleteFil
 			m.dataNodeManager.Lock()
 			for _, dn := range blockInfo.Locations {
 				// add garbage
-				m.dataNodeManager.HotNodes[dn].Garbage = append(m.dataNodeManager.HotNodes[dn].Garbage, handle)
+				m.dataNodeManager.PushGarbage(handle, dn, common.HOT)
 			}
 			m.dataNodeManager.Unlock()
 			// block delete
@@ -176,5 +187,14 @@ func (m *MasterNode) DeleteFile(args ipc.DeleteFileArgs, response *ipc.DeleteFil
 		// delete key
 		delete(m.blockManager.Files, args.Key)
 	}
+	return nil
+}
+
+func (m *MasterNode) healthCheck() error {
+	deadNodes := m.dataNodeManager.HealthCheckNodes()
+
+}
+
+func (m *MasterNode) ListKeys(args ipc.ListKeysArgs, response *ipc.ListKeysResponse) error {
 	return nil
 }

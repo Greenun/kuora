@@ -62,7 +62,6 @@ func (blockManager *BlockManager) CreateBlocks(addrs []common.NodeAddress,
 
 	rpcErrors := map[common.NodeAddress][]error{}
 	rpcSucceed := map[common.NodeAddress][]ipc.CreateBlockResponse{}
-	// NEED TO SET PRIMARY!!!!!!!!!
 
 	for _, addr := range addrs {
 		var response ipc.CreateBlockResponse
@@ -74,6 +73,14 @@ func (blockManager *BlockManager) CreateBlocks(addrs []common.NodeAddress,
 			rpcSucceed[addr] = append(rpcSucceed[addr], response)
 		}
 	}
+	// set primary, locations
+	for _, handle := range file.Blocks {
+		for k, _ := range rpcSucceed {
+			blockManager.Blocks[handle].Locations = append(blockManager.Blocks[handle].Locations, k)
+		}
+		blockManager.Blocks[handle].Primary = blockManager.Blocks[handle].Locations[0]
+	}
+
 	return key, addrs, nil
 }
 

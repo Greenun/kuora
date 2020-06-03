@@ -126,3 +126,13 @@ func (manager *DataNodeManager) HealthCheckNodes() map[common.NodeType][]common.
 func (manager *DataNodeManager) RemoveNode(address common.NodeAddress) ([]common.BlockHandle, error) {
 	return nil, nil // temp
 }
+
+func (manager *DataNodeManager) PushGarbage(handle common.BlockHandle,
+	address common.NodeAddress, dnt common.NodeType) error {
+	if dnt == common.HOT {
+		manager.HotNodes[address].Garbage = append(manager.HotNodes[address].Garbage, handle)
+	} else {
+		manager.ColdNodes[address].Garbage = append(manager.ColdNodes[address].Garbage, handle)
+	}
+	return nil
+}

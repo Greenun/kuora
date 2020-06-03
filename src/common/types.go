@@ -52,6 +52,7 @@ const (
 	HeartBeatInterval = 500 * time.Millisecond
 	GarbageCollectionInterval = 30 * time.Second // temp
 	HeartBeatTimeout = 5 * time.Second
+	HealthCheckInterval = 4*HeartBeatInterval
 
 	MaxRetry = 3
 )
