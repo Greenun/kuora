@@ -172,7 +172,7 @@ func (c *Client) WriteBlock(handle common.BlockHandle, offset common.Offset, dat
 		return fmt.Errorf("OFFSET + DATA LENGTH EXCEEDS BLOCK SIZE")
 	}
 	var resp ipc.GetBlockInfoResponse
-	err := ipc.Single(c.master, "Master.GetBlockInfo", ipc.GetBlockInfoArgs{Handle:handle}, &resp)
+	err := ipc.Single(c.master, "MasterNode.GetBlockInfo", ipc.GetBlockInfoArgs{Handle:handle}, &resp)
 	if err != nil {
 		logger.Errorf("ERROR OCCURRED DURING GetBlockInfo RPC")
 		return err
@@ -196,7 +196,12 @@ func (c *Client) WriteBlock(handle common.BlockHandle, offset common.Offset, dat
 }
 
 func (c *Client) Delete(key common.HotKey) error {
+	var response ipc.DeleteFileResponse
 
+	err := ipc.Single(c.master, "MasterNode.DeleteFile", ipc.DeleteFileArgs{Key:key}, &response)
+	if err != nil {
+		return fmt.Errorf("DELETE ERROR - %s", err.Error())
+	}
 	return nil
 }
 

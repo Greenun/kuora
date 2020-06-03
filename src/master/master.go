@@ -10,6 +10,7 @@ import (
 	"math"
 	"net"
 	"net/rpc"
+	"time"
 )
 
 type MasterNode struct {
@@ -54,9 +55,19 @@ func Run(address common.NodeAddress, rootDir string) *MasterNode {
 
 	// background task
 	go func(){
+		healthCheckTick := time.Tick(common.HealthCheckInterval)
+		expireTick := time.Tick(common.ExpireInterval)
+		var err error
 		for {
 			select {
+				case <- healthCheckTick:
+					err = masterNode.healthCheck()
+				case <- expireTick:
+					err = masterNode.ExpireCheck()
 
+			}
+			if err != nil {
+				logger.Errorf("ERROR OCCURED DURING BACKGROUND TASK - %s", err.Error())
 			}
 		}
 	}()
@@ -193,14 +204,30 @@ func (m *MasterNode) DeleteFile(args ipc.DeleteFileArgs, response *ipc.DeleteFil
 func (m *MasterNode) healthCheck() error {
 	deadNodes := m.dataNodeManager.HealthCheckNodes()
 	for _, hotDead := range deadNodes[common.HOT] {
-
+		logger.Infof("Remove Node - %s", hotDead)
+		handles, err := m.dataNodeManager.RemoveNode(hotDead, common.HOT)
+		if err != nil {
+			return fmt.Errorf("ERROR OCCURRED DURING REMOVE NODE - %s", err.Error())
+		}
+		logger.Infof("Sweep Block Phase")
+		m.blockManager.SweepBlocks(handles, hotDead)
 	}
 
 	for _, coldDead := range deadNodes[common.COLD] {
-
+		logger.Infof("Remove Node - %s", coldDead)
+		handles, err := m.dataNodeManager.RemoveNode(coldDead, common.COLD)
+		if err != nil {
+			return fmt.Errorf("ERROR OCCURRED DURING REMOVE NODE - %s", err.Error())
+		}
+		logger.Infof("Sweep Block Phase")
+		m.blockManager.SweepBlocks(handles, coldDead)
 	}
 }
 
 func (m *MasterNode) ListKeys(args ipc.ListKeysArgs, response *ipc.ListKeysResponse) error {
+	return nil
+}
+
+func (m *MasterNode) ExpireCheck() error {
 	return nil
 }

@@ -96,3 +96,7 @@ func (blockManager *BlockManager) AddBlock(key common.HotKey) error {
 	fmt.Println(info)
 	return nil
 }
+
+func (blockManager *BlockManager) SweepBlocks(handles []common.BlockHandle, address common.NodeAddress) error {
+	return nil
+}
