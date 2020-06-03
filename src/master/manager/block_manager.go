@@ -4,6 +4,7 @@ import (
 	"common"
 	"common/ipc"
 	"fmt"
+	"strconv"
 	"sync"
 	"time"
 
@@ -36,10 +37,10 @@ func generateKey(prev common.BlockHandle, numBlock int, offset common.Offset) co
 	newKey := ""
 	start := int(prev)
 	for i := 0; i < numBlock; i++ {
-		newKey += string(start+i)
+		newKey += strconv.Itoa(start+i)
 		newKey += "_"
 	}
-	newKey += string(int(offset))
+	newKey += strconv.Itoa(int(offset))
 	return common.HotKey(newKey)
 }
 

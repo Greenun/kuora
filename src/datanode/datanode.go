@@ -150,6 +150,7 @@ func (d *DataNode) ReadBlock(args ipc.ReadBlockArgs, response *ipc.ReadBlockResp
 
 	if err != nil {
 		if err == io.EOF {
+			response.Length = n
 			response.ErrCode = common.ReadEOF
 			return nil
 		}

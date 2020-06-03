@@ -74,6 +74,8 @@ type GetMetadataArgs struct {
 type GetMetadataResponse struct {
 	// blocks
 	BlockHandles []common.BlockHandle
+	// length
+	Length int64
 }
 
 type GetBlockInfoArgs struct {

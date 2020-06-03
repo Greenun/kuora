@@ -42,15 +42,16 @@ func (c *Client) GetMetadata(key common.HotKey) ([]common.BlockHandle, error){
 	return getMetadata.BlockHandles, nil
 }
 
-func (c *Client) Read(key common.HotKey, offset common.Offset, buffer []byte) (int64, []byte, error) {
+func (c *Client) Read(key common.HotKey, offset common.Offset, buffer []byte) (int64, error) {
+	//(int64, []byte, error)
 	handles, err := c.GetMetadata(key)
 	if err != nil {
-		return -1, nil, err
+		return -1, err
 	}
 	if int(offset / common.BlockSize) > len(handles) {
-		return -1, nil, fmt.Errorf("OFFSET EXCEED FILE LENGTH")
+		return -1, fmt.Errorf("OFFSET EXCEED FILE LENGTH")
 	}
-	totalData := make([]byte, 0)
+	//totalData := make([]byte, 0)
 	var current int64 = 0
 	// read for length of buffer
 	for current < int64(len(buffer)) {
@@ -58,22 +59,22 @@ func (c *Client) Read(key common.HotKey, offset common.Offset, buffer []byte) (i
 		blockOffset := offset % common.BlockSize
 
 		if int(idx) >= len(handles) {
-			return -1, nil, fmt.Errorf("Read after EOF Error")
+			return -1, fmt.Errorf("Read after EOF Error")
 		}
-
 		handle := handles[idx]
 		readNum, err := c.ReadBlock(handle, blockOffset, buffer)
 
 		if err != nil {
-			return -1, nil, fmt.Errorf("Read Error")
+			return -1, fmt.Errorf("Read Error - %v", err.Error())
 		}
 
 		current += readNum
 		offset += common.Offset(readNum)
-		totalData = append(totalData, buffer[:readNum]...)
+		//totalData = append(totalData, buffer[:readNum]...)
 	}
-	logger.Info(totalData) // temp
-	return current, totalData, nil
+	//logger.Info(totalData) // temp
+	//return current, totalData, nil
+	return current, nil
 }
 
 
@@ -112,7 +113,8 @@ func (c *Client) ReadBlock(handle common.BlockHandle, offset common.Offset, buff
 		)
 		if err != nil {
 			// temp
-			logger.Errorf("ERROR OCCURRED DURING READ BLOCK %d from %s", handle, locations[randomIndex])
+			//logger.Errorf("ERROR OCCURRED DURING READ BLOCK %d from %s", handle, locations[randomIndex])
+			fmt.Errorf("ERROR OCCURRED DURING READ BLOCK %d from %s", handle, locations[randomIndex])
 		} else {
 			copy(buffer, readResponse.Data) // dump bytes
 			break

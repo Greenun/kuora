@@ -3,27 +3,25 @@ package client
 import (
 	"bytes"
 	"common"
+	"math/rand"
 	"testing"
+	"time"
 )
 
 var c = NewClient("127.0.0.1:40000")
 
+var keyList = make([]common.HotKey, 0)
+var keyMap = make(map[common.HotKey][]byte, 0)
+
 func TestClient_Create(t *testing.T) {
-	t.Log("Create Operation")
-	c.Create(10)
-	c.Create(1000)
-	c.Create(common.BlockSize + 1)
+	//t.Log("Create Operation")
+	//c.Create(10)
+	//c.Create(1000)
+	//c.Create(common.BlockSize + 1)
 }
-
-//func TestClient_Read(t *testing.T) {
-	//t.Log("Read Operation")
-//}
-
 
 func TestFlow(t *testing.T) {
 	l1 := int64(10)
-	//l2 := int64(1 << 12)
-	//l3 := int64(1 << 20 + 1)
 
 	randomBytes := common.GenerateRandomData(l1)
 	t.Logf("Bytes: %v", randomBytes)
@@ -32,10 +30,62 @@ func TestFlow(t *testing.T) {
 		t.Errorf("Create And Write File Error - %s", err.Error())
 	}
 	t.Logf("File Key : %s", key)
+	keyList = append(keyList, key)
+	keyMap[key] = randomBytes
 	buffer := make([]byte, l1)
-	data := make([]byte, l1)
-	_, data, _ = c.Read(key, 0, buffer)
-	t.Logf("Bytes: %v", data)
+	n, _ := c.Read(key, 0, buffer)
+	t.Logf("Bytes: %v", n)
 	result := bytes.Compare(buffer, randomBytes)
 	t.Logf("Compare Result - %d", result) // result need to be 0
+	if result != 0 {
+		t.Fail()
+	}
+}
+
+func TestBigFileFlow(t *testing.T) {
+	length := int64(1 << 20 + 10)
+	randomBytes := common.GenerateRandomData(length)
+	key, err := c.CreateAndWrite(randomBytes)
+	if err != nil {
+		t.Errorf("Create And Write Error - %s}", err.Error())
+	}
+	t.Logf("File Key : %v", key)
+	keyList = append(keyList, key)
+	keyMap[key] = randomBytes
+	buffer := make([]byte, length)
+	n, _ := c.Read(key, 0, buffer)
+	t.Logf("Bytes: %v", n)
+	result := bytes.Compare(buffer, randomBytes)
+	t.Logf("Compare Result - %d", result) // result need to be 0
+	if result != 0 {
+		t.Fail()
+	}
+}
+
+func TestReadFile(t *testing.T) {
+	for _, key := range keyList {
+		buffer := make([]byte, len(keyMap[key]))
+		n, _ := c.Read(key, 0, buffer)
+		t.Logf("Bytes: %d", n)
+		result := bytes.Compare(buffer, keyMap[key])
+		t.Logf("Compare Result - %d", result) // result need to be 0
+	}
+}
+
+func TestReadFileFromRandomOffset(t *testing.T) {
+	offset := common.Offset(0)
+	rand.Seed(int64(time.Now().Nanosecond()))
+	for key, answer := range keyMap {
+		offset = common.Offset(rand.Intn(len(answer) - 1))
+		randomLength := offset + common.Offset(rand.Intn(1 + len(answer) - int(offset)))
+		buffer := make([]byte, randomLength)
+		n, err := c.Read(key, offset, buffer)
+		if err != nil && n == -1 {
+			t.Errorf("Error Occurred - %v", err.Error())
+		}
+		t.Logf("Bytes: %d", n)
+		if bytes.Compare(buffer, answer[offset:randomLength]) == 0 {
+			t.Logf("Corret For Key - %v", key)
+		}
+	}
 }
