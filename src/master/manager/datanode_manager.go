@@ -123,8 +123,29 @@ func (manager *DataNodeManager) HealthCheckNodes() map[common.NodeType][]common.
 	return deadNodes
 }
 
-func (manager *DataNodeManager) RemoveNode(address common.NodeAddress) ([]common.BlockHandle, error) {
-	return nil, nil // temp
+func (manager *DataNodeManager) RemoveNode(address common.NodeAddress, nt common.NodeType) ([]common.BlockHandle, error) {
+	manager.Lock()
+	defer manager.Unlock()
+	handles := make([]common.BlockHandle, 16) // temp
+	var target map[common.NodeAddress]*Node
+	if nt == common.HOT {
+		target = manager.HotNodes
+	} else {
+		target = manager.ColdNodes
+	}
+	node, exist := target[address]
+	if !exist {
+		return nil, fmt.Errorf("NODE DOES NOT EXIST %s", address)
+	}
+	for handle, blockExist := range node.Blocks {
+		if blockExist {
+			handles = append(handles, handle)
+		}
+	}
+	// delete node from memory
+	delete(target, address)
+
+	return handles, nil // temp
 }
 
 func (manager *DataNodeManager) PushGarbage(handle common.BlockHandle,

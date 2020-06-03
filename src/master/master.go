@@ -192,7 +192,13 @@ func (m *MasterNode) DeleteFile(args ipc.DeleteFileArgs, response *ipc.DeleteFil
 
 func (m *MasterNode) healthCheck() error {
 	deadNodes := m.dataNodeManager.HealthCheckNodes()
+	for _, hotDead := range deadNodes[common.HOT] {
 
+	}
+
+	for _, coldDead := range deadNodes[common.COLD] {
+
+	}
 }
 
 func (m *MasterNode) ListKeys(args ipc.ListKeysArgs, response *ipc.ListKeysResponse) error {
