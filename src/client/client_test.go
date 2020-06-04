@@ -53,9 +53,13 @@ func TestBigFileFlow(t *testing.T) {
 	keyList = append(keyList, key)
 	keyMap[key] = randomBytes
 	buffer := make([]byte, length)
-	n, _ := c.Read(key, 0, buffer)
+	n, err := c.Read(key, 0, buffer)
+	if err != nil {
+		t.Errorf("Error - %s", err.Error())
+	}
 	t.Logf("Bytes: %v", n)
 	result := bytes.Compare(buffer, randomBytes)
+	t.Logf("buffer ~ %d | buffer/randomBytes ~ %v/%v", len(buffer), buffer[:10], randomBytes[:10])
 	t.Logf("Compare Result - %d", result) // result need to be 0
 	if result != 0 {
 		t.Fail()
@@ -80,11 +84,12 @@ func TestReadFileFromRandomOffset(t *testing.T) {
 		randomLength := offset + common.Offset(rand.Intn(1 + len(answer) - int(offset)))
 		buffer := make([]byte, randomLength)
 		n, err := c.Read(key, offset, buffer)
+		t.Logf("Offset: %d | Length: %d", offset, randomLength)
 		if err != nil && n == -1 {
 			t.Errorf("Error Occurred - %v", err.Error())
 		}
 		t.Logf("Bytes: %d", n)
-		if bytes.Compare(buffer, answer[offset:randomLength]) == 0 {
+		if bytes.Compare(buffer, answer[offset:offset+randomLength]) == 0 {
 			t.Logf("Corret For Key - %v", key)
 		}
 	}

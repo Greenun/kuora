@@ -51,10 +51,11 @@ func (c *Client) Read(key common.HotKey, offset common.Offset, buffer []byte) (i
 	if int(offset / common.BlockSize) > len(handles) {
 		return -1, fmt.Errorf("OFFSET EXCEED FILE LENGTH")
 	}
-	//totalData := make([]byte, 0)
 	var current int64 = 0
+	blockBuffer := make([]byte, len(buffer))
 	// read for length of buffer
 	for current < int64(len(buffer)) {
+
 		idx := common.BlockIndex(offset / common.BlockSize)
 		blockOffset := offset % common.BlockSize
 
@@ -62,18 +63,18 @@ func (c *Client) Read(key common.HotKey, offset common.Offset, buffer []byte) (i
 			return -1, fmt.Errorf("Read after EOF Error")
 		}
 		handle := handles[idx]
-		readNum, err := c.ReadBlock(handle, blockOffset, buffer)
-
+		readNum, err := c.ReadBlock(handle, blockOffset, blockBuffer)
+		logger.Infof("Read Number: %d ", readNum)
 		if err != nil {
+			//if readNum != 0 {
+			//
+			//}
 			return -1, fmt.Errorf("Read Error - %v", err.Error())
 		}
-
+		copy(buffer[current:], blockBuffer[:readNum])
 		current += readNum
 		offset += common.Offset(readNum)
-		//totalData = append(totalData, buffer[:readNum]...)
 	}
-	//logger.Info(totalData) // temp
-	//return current, totalData, nil
 	return current, nil
 }
 
@@ -113,9 +114,10 @@ func (c *Client) ReadBlock(handle common.BlockHandle, offset common.Offset, buff
 		)
 		if err != nil {
 			// temp
-			//logger.Errorf("ERROR OCCURRED DURING READ BLOCK %d from %s", handle, locations[randomIndex])
-			fmt.Errorf("ERROR OCCURRED DURING READ BLOCK %d from %s", handle, locations[randomIndex])
+			logger.Errorf("ERROR OCCURRED DURING READ BLOCK %d from %s", handle, locations[randomIndex])
+			//fmt.Errorf("ERROR OCCURRED DURING READ BLOCK %d from %s", handle, locations[randomIndex])
 		} else {
+			logger.Infof("Read Data From Node %v", locations[randomIndex])
 			copy(buffer, readResponse.Data) // dump bytes
 			break
 		}
@@ -123,7 +125,7 @@ func (c *Client) ReadBlock(handle common.BlockHandle, offset common.Offset, buff
 	if err != nil {
 		return -1, fmt.Errorf("READ BLOCK ERROR FOR ALL LOCATIONS")
 	} else if readResponse.ErrCode == common.ReadEOF {
-		return int64(readResponse.Length), fmt.Errorf("READ EOF")
+		return int64(readResponse.Length), nil// fmt.Errorf("READ EOF")
 	}
 
 	return readNum, nil
