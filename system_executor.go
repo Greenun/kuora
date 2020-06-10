@@ -65,59 +65,6 @@ func Executor(nodeNum int) {
 		go fp(port)
 	}
 	wg.Wait()
-
-	//writer.Close()
-	//writer.Close()
-	//os.Stdout = old
-
-	//masterProcess := exec.Command("go", commands...)
-	//masterProcess := exec.Command("bash", commands...)
-	//masterPipe, err := masterProcess.Output()
-	//if err != nil {
-	//	panic(err)
-	//}
-	//masterOut, err := masterProcess.StdoutPipe()
-	//
-	//if err != nil {
-	//	panic(err)
-	//}
-	//rErr := masterProcess.Start()
-	//if rErr != nil {
-	//	panic(rErr)
-	//}
-	//defer masterProcess.Wait()
-	//Reader := bufio.NewReader(masterOut)
-	//Scanner := bufio.NewScanner(masterOut)
-	//go func(){
-	//	for Scanner.Scan(){
-	//		logger.Infof(Scanner.Text())
-	//		time.Sleep(1*time.Second)
-	//	}
-	//}()
-	//masterProcess.Wait()
-	//for {
-		//line, err := Reader.ReadString('\n')
-		//if err != nil {
-		//	logger.Errorf("%v", err.Error())
-		//	time.Sleep(1*time.Second)
-		//	continue
-		//}
-		//logger.Infof("%s", line)
-	//}
-	//go io.Copy(os.Stdout, masterOut)
-
-	//for {
-	//	var o string
-	//	select {
-	//		case o = <- mChannel:
-	//			logger.Infof("Master: %s", o)
-	//		case o = <- dnChannel:
-	//			logger.Infof("DataNode: %s", o)
-	//	}
-	//}
-	//for _, port := range ports {
-	//	DATANODE_BASE + port
-	//}
-	<- ch
+	//<- ch
 
 }
