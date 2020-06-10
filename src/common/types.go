@@ -29,8 +29,8 @@ type Error struct {
 
 // error code
 const (
-	ReadEOF = 400 + iota
-
+	ReadOK = 400 + iota
+	ReadEOF
 )
 
 // Status

@@ -81,15 +81,15 @@ func TestReadFileFromRandomOffset(t *testing.T) {
 	rand.Seed(int64(time.Now().Nanosecond()))
 	for key, answer := range keyMap {
 		offset = common.Offset(rand.Intn(len(answer) - 1))
-		randomLength := offset + common.Offset(rand.Intn(1 + len(answer) - int(offset)))
-		buffer := make([]byte, randomLength)
+		randomLength := offset + common.Offset(rand.Intn(len(answer) - int(offset) - 1)) + 1
+		buffer := make([]byte, randomLength - offset)
 		n, err := c.Read(key, offset, buffer)
 		t.Logf("Offset: %d | Length: %d", offset, randomLength)
 		if err != nil && n == -1 {
 			t.Errorf("Error Occurred - %v", err.Error())
 		}
 		t.Logf("Bytes: %d", n)
-		if bytes.Compare(buffer, answer[offset:offset+randomLength]) == 0 {
+		if bytes.Compare(buffer, answer[offset:randomLength]) == 0 {
 			t.Logf("Corret For Key - %v", key)
 		}
 	}

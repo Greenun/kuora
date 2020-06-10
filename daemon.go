@@ -26,10 +26,17 @@ func runDataNode(address, masterAddress common.NodeAddress, rootDir string, node
 
 func main() {
 	logger.SetLevel(logger.DebugLevel)
+
+	ch := make(chan bool, 1)
 	if len(os.Args) < 2 {
-		fmt.Println("Insufficient Arguments")
-		return
+		go func(){
+			Executor(2)
+		}()
+		//fmt.Println("Insufficient Arguments")
+		//return
+		<- ch
 	}
+
 	if os.Args[1] == "master" {
 		if len(os.Args) < 4 {
 			fmt.Println("Not Enough Arguments for Master")

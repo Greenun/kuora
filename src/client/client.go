@@ -53,23 +53,23 @@ func (c *Client) Read(key common.HotKey, offset common.Offset, buffer []byte) (i
 	}
 	var current int64 = 0
 	blockBuffer := make([]byte, len(buffer))
+	bufferLength := int64(len(buffer))
 	// read for length of buffer
-	for current < int64(len(buffer)) {
-
+	for current < bufferLength {
 		idx := common.BlockIndex(offset / common.BlockSize)
 		blockOffset := offset % common.BlockSize
-
 		if int(idx) >= len(handles) {
 			return -1, fmt.Errorf("Read after EOF Error")
 		}
 		handle := handles[idx]
+		logger.Infof("O Offset: %d, BlockSize: %d, key: %s, handle: %d", offset, common.BlockSize, key, handle)
+		logger.Infof("Index: %d, Offset: %d", idx, blockOffset)
+		logger.Infof("Buffer Length: %d, Current: %d", len(buffer), current)
 		readNum, err := c.ReadBlock(handle, blockOffset, blockBuffer)
 		logger.Infof("Read Number: %d ", readNum)
 		if err != nil {
-			//if readNum != 0 {
-			//
-			//}
-			return -1, fmt.Errorf("Read Error - %v", err.Error())
+			logger.Warnf("Error : %v", err)
+			return -1, fmt.Errorf("READ ERROR - %v", err.Error())
 		}
 		copy(buffer[current:], blockBuffer[:readNum])
 		current += readNum
@@ -125,10 +125,10 @@ func (c *Client) ReadBlock(handle common.BlockHandle, offset common.Offset, buff
 	if err != nil {
 		return -1, fmt.Errorf("READ BLOCK ERROR FOR ALL LOCATIONS")
 	} else if readResponse.ErrCode == common.ReadEOF {
-		return int64(readResponse.Length), nil// fmt.Errorf("READ EOF")
+		return int64(readResponse.Length), nil //fmt.Errorf("CODE-%v", common.ReadEOF)
+	} else {
+		return readNum, nil
 	}
-
-	return readNum, nil
 }
 
 func (c *Client) Write(key common.HotKey, offset common.Offset, data []byte) error {

@@ -68,7 +68,9 @@ func Run(rootDir string, addr, masterAddr common.NodeAddress, nodeType common.No
 			if err != nil {
 				logger.Errorf("ERROR OCCURRED DURING TASK %s", action)
 			} else {
-				logger.Infof(" - TASK: %s", action)
+				if action != "Heartbeat" {
+					logger.Infof(" - TASK: %s", action)
+				}
 			}
 		}
 	}()
@@ -157,6 +159,7 @@ func (d *DataNode) ReadBlock(args ipc.ReadBlockArgs, response *ipc.ReadBlockResp
 		return err
 	}
 	response.Length = n
+	response.ErrCode = common.ReadOK
 
 	return nil
 }
