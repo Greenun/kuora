@@ -4,7 +4,10 @@ import (
 	"common"
 	"sync"
 	"time"
+	logrus "github.com/Sirupsen/logrus"
 )
+
+var logger *logrus.Entry = common.Logger()
 
 type Block struct {
 	sync.RWMutex

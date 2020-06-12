@@ -4,7 +4,7 @@ import (
 	"common"
 	"common/ipc"
 	"fmt"
-	logger "github.com/Sirupsen/logrus"
+	logrus "github.com/Sirupsen/logrus"
 	"io"
 	"master/manager"
 	"math"
@@ -12,6 +12,8 @@ import (
 	"net/rpc"
 	"time"
 )
+
+var logger *logrus.Entry = common.Logger()
 
 type MasterNode struct {
 	Address common.NodeAddress

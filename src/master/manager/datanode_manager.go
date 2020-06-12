@@ -4,7 +4,7 @@ import (
 	"common"
 	"common/ipc"
 	"fmt"
-	logger "github.com/Sirupsen/logrus"
+	//logrus "github.com/Sirupsen/logrus"
 	"math/rand"
 	"sync"
 	"time"

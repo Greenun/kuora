@@ -2,6 +2,7 @@ package main
 
 import (
 	"common"
+	"fmt"
 	"sync"
 
 	//"bufio"
@@ -28,25 +29,14 @@ const (
 
 func Executor(nodeNum int) {
 	logger.SetLevel(logger.DebugLevel)
-	ch := make(chan bool, 1)
-	//mChannel := make(chan string, 100)
-	//dnChannel := make(chan string ,100)
-	//commands := []string{
-	//	"-c",
-	//	"go",
-	//	"run",
-	//	"daemon.go",
-	//	"master",
-	//	MASTER_ADDR,
-	//	path.Join(USER_DIRECTORY, "master_dir"),
-	//}
-	//logger.Infof("%v", commands)
+	//ch := make(chan bool, 1)
 	ports := make([]string, 0)
 	for i := 0; i < nodeNum; i++ {
 		ports = append(ports, strconv.Itoa(BASE_PORT + i))
 	}
 
 	go func(){
+		fmt.Println(common.GetGoroutineID())
 		runMaster(MASTER_ADDR, path.Join(USER_DIRECTORY, "master_dir"))
 	}()
 	wg := new(sync.WaitGroup)
@@ -62,9 +52,8 @@ func Executor(nodeNum int) {
 		runDataNode(common.NodeAddress(address), MASTER_ADDR, directory, common.HOT)
 	}
 	for _, port := range ports {
+		fmt.Println(common.GetGoroutineID())
 		go fp(port)
 	}
 	wg.Wait()
-	//<- ch
-
 }

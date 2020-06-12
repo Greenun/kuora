@@ -4,15 +4,16 @@ import (
 	"common"
 	"common/ipc"
 	"fmt"
+	logrus "github.com/Sirupsen/logrus"
 	"io"
 	"net"
 	"net/rpc"
 	"os"
 	"sync"
 	"time"
-
-	logger "github.com/Sirupsen/logrus"
 )
+
+var logger *logrus.Entry = common.Logger()
 
 type DataNode struct {
 	sync.RWMutex
@@ -52,6 +53,7 @@ func Run(rootDir string, addr, masterAddr common.NodeAddress, nodeType common.No
 	}
 	//
 	go func(){
+		logger.Infof("Init DataNode")
 		var err error
 		var action string
 		heartbeatTick := time.Tick(common.HeartBeatInterval)

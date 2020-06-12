@@ -7,8 +7,6 @@ import (
 	"strconv"
 	"sync"
 	"time"
-
-	logger "github.com/Sirupsen/logrus"
 )
 
 type BlockManager struct {

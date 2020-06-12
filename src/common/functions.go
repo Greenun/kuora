@@ -1,8 +1,13 @@
 package common
 
 import (
+	"bytes"
 	"fmt"
+	logrus "github.com/Sirupsen/logrus"
 	"math/rand"
+	"runtime"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -26,4 +31,33 @@ func GenerateRandomData(length int64) []byte {
 	rand.Seed(int64(time.Now().Nanosecond()))
 	rand.Read(data)
 	return data
+}
+
+func GetGoroutineID() uint64 {
+	b := make([]byte, 1024)
+	b = b[:runtime.Stack(b, false)]
+	stackTrace := string(b)
+	if strings.Contains(stackTrace, "datanode") {
+
+	} else if strings.Contains(stackTrace, "master") {
+
+	} else if strings.Contains(stackTrace, "block") {
+
+	}
+	fmt.Println(stackTrace)
+	// stack datanode, master, manager 잘만 쓰면 가능할듯?
+
+
+	b = bytes.TrimPrefix(b, []byte("goroutine "))
+	b = b[:bytes.IndexByte(b, ' ')]
+	n, _ := strconv.ParseUint(string(b), 10, 64)
+	return n
+}
+
+func Logger() *logrus.Entry{
+	log := logrus.New()
+	log.SetLevel(logrus.DebugLevel)
+	logger := log.WithField("GoRoutine_ID", GetGoroutineID())
+	logger.Infof("Init Logger - - - ")
+	return logger
 }
