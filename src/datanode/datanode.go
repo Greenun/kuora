@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-var logger *logrus.Entry = common.Logger()
+//var logger *logrus.Entry = common.Logger()
 
 type DataNode struct {
 	sync.RWMutex
@@ -25,6 +25,9 @@ type DataNode struct {
 
 	blockMap map[common.BlockHandle]*Block
 	garbage []common.BlockHandle
+
+	// for debug
+	logger *logrus.Entry
 }
 
 
@@ -36,7 +39,11 @@ func Run(rootDir string, addr, masterAddr common.NodeAddress, nodeType common.No
 		nodeType: nodeType,
 		blockMap: make(map[common.BlockHandle]*Block),
 		garbage: make([]common.BlockHandle, 0),
+		logger: common.Logger(),
 	}
+
+	logger := d.logger
+
 	rpcServer := rpc.NewServer()
 	rpcServer.Register(d)
 	l, err := net.Listen("tcp", string(d.address))
@@ -100,7 +107,7 @@ func (d *DataNode) Heartbeat() error {
 	var response ipc.HeartBeatResponse
 	err := ipc.Single(d.masterNode, "MasterNode.HeartbeatResponse", args, &response)
 	if err != nil {
-		logger.Error("ERROR DURING HEARTBEAT")
+		d.logger.Error("ERROR DURING HEARTBEAT")
 		return err
 	}
 	d.garbage = append(d.garbage, response.Garbage...)
@@ -115,15 +122,15 @@ func (d *DataNode) CreateBlock(args ipc.CreateBlockArgs, response *ipc.CreateBlo
 	for _, v := range args.Handles {
 		hstr += string(v) + " "
 	}
-	logger.Info("Create Block RPC Call ", hstr)
+	d.logger.Info("Create Block RPC Call ", hstr)
 
 	//files := make([]string, len(args.Handles))
 	for _, handle := range args.Handles {
 		//files = append(files, BlockFileFormat(d.rootDir, handle))
-		logger.Infof("Format: %s", BlockFileFormat(d.rootDir, handle))
+		d.logger.Infof("Format: %s", BlockFileFormat(d.rootDir, handle))
 		osErr := createBlockFile(BlockFileFormat(d.rootDir, handle))
 		if osErr != nil {
-			logger.Errorf("ERROR OCCURRED DURING CREATE FILE: %d\n%v", handle, osErr.Error())
+			d.logger.Errorf("ERROR OCCURRED DURING CREATE FILE: %d\n%v", handle, osErr.Error())
 			return osErr
 		}
 		d.blockMap[handle] = &Block{
@@ -169,7 +176,7 @@ func (d *DataNode) ReadBlock(args ipc.ReadBlockArgs, response *ipc.ReadBlockResp
 func (d *DataNode) readFile(filename string, offset common.Offset, data []byte) (int, error) {
 	fd, err := os.Open(filename)
 	if err != nil {
-		logger.Errorf("ERROR DURING READ FILE OPERATION: %v", err)
+		d.logger.Errorf("ERROR DURING READ FILE OPERATION: %v", err)
 		return -1, err
 	}
 	defer fd.Close()
@@ -186,7 +193,7 @@ func (d *DataNode) WriteBlock(args ipc.WriteBlockArgs, response *ipc.WriteBlockR
 	}
 	editLength := args.Offset + common.Offset(len(args.Data))
 	if editLength > common.BlockSize {
-		logger.Errorf("BLOCK %d SIZE EXCEEDED", args.Handle)
+		d.logger.Errorf("BLOCK %d SIZE EXCEEDED", args.Handle)
 		return fmt.Errorf("BLOCK SIZE EXCEEDED")
 	}
 		if editLength > common.Offset(blockInfo.length) {
@@ -269,12 +276,12 @@ func (d *DataNode) forwardBlockData(target common.NodeAddress, data []byte,
 //}
 
 func (d *DataNode) GarbageCollection() error {
-	logger.Infof("Garbage Collection For %d blocks", len(d.garbage))
+	d.logger.Infof("Garbage Collection For %d blocks", len(d.garbage))
 	var err error
 	for _, handle := range d.garbage {
 		err = d.RemoveBlock(handle)
 		if err != nil {
-			logger.Errorf("ERROR DURING REMOVE FILE: %v", err)
+			d.logger.Errorf("ERROR DURING REMOVE FILE: %v", err)
 			return err
 		}
 	}

@@ -7,7 +7,6 @@ import (
 	"math/rand"
 	"runtime"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -35,19 +34,15 @@ func GenerateRandomData(length int64) []byte {
 
 func GetGoroutineID() uint64 {
 	b := make([]byte, 1024)
-	b = b[:runtime.Stack(b, false)]
-	stackTrace := string(b)
-	if strings.Contains(stackTrace, "datanode") {
-
-	} else if strings.Contains(stackTrace, "master") {
-
-	} else if strings.Contains(stackTrace, "block") {
-
-	}
-	fmt.Println(stackTrace)
-	// stack datanode, master, manager 잘만 쓰면 가능할듯?
-
-
+	b = b[:runtime.Stack(b, true)]
+	//stackTrace := string(b)
+	//if strings.Contains(stackTrace, "datanode") {
+	//
+	//} else if strings.Contains(stackTrace, "master") {
+	//
+	//} else if strings.Contains(stackTrace, "block") {
+	//
+	//}
 	b = bytes.TrimPrefix(b, []byte("goroutine "))
 	b = b[:bytes.IndexByte(b, ' ')]
 	n, _ := strconv.ParseUint(string(b), 10, 64)

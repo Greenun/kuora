@@ -18,6 +18,7 @@ type BlockManager struct {
 
 	HandleCount common.BlockHandle
 	ExpiredBlocks []common.BlockHandle
+	RequireCopy []common.BlockHandle
 	//Status --> unstable / stable (like enum)
 }
 
@@ -26,6 +27,7 @@ func NewBlockManager() *BlockManager {
 		Blocks:      make(map[common.BlockHandle]*Block),
 		Files:       make(map[common.HotKey]*FileInfo),
 		HandleCount: 0,
+		RequireCopy: make([]common.BlockHandle, 0),
 	}
 	logger.Info("INIT NEW BLOCK MANAGER")
 	return manager
@@ -109,5 +111,38 @@ func (blockManager *BlockManager) AddBlock(key common.HotKey) error {
 }
 
 func (blockManager *BlockManager) SweepBlocks(handles []common.BlockHandle, address common.NodeAddress) error {
-	return nil
+	errorMsg := ""
+	for _, handle := range handles {
+		blockManager.RLock()
+		block, exist := blockManager.Blocks[handle]
+		blockManager.RUnlock()
+		if !exist {
+			logger.Warningf("Block %d Does Not Exist", handle)
+		}
+		block.Lock()
+		var remains []common.NodeAddress
+		for _, a := range block.Locations {
+			if a != address {
+				remains = append(remains, a)
+			}
+		}
+		block.Locations = remains
+		numReplicas := len(remains)
+		block.Unlock()
+
+		if numReplicas == 0 {
+			msg := fmt.Sprintf("NO REPLICAS EXIST FOR HANDLE %d", handle)
+			logger.Errorf(msg)
+			blockManager.RequireCopy = append(blockManager.RequireCopy, handle)
+			errorMsg += msg + "\n"
+		} else if numReplicas < common.ReplicaNum {
+			blockManager.RequireCopy = append(blockManager.RequireCopy, handle)
+		}
+	}
+
+	if len(errorMsg) == 0 {
+		return nil
+	} else {
+		return fmt.Errorf(errorMsg)
+	}
 }
