@@ -232,6 +232,46 @@ func (m *MasterNode) ListKeys(args ipc.ListKeysArgs, response *ipc.ListKeysRespo
 	return nil
 }
 
+func (m *MasterNode) Rearrange() error {
+	// perform re replication for all requiring copy
+	return nil
+}
+
+func (m *MasterNode) reReplication(handle common.BlockHandle, number int) error {
+	holder, receivers, err := m.dataNodeManager.SelectReReplication(number, handle)
+	if err != nil {
+		return err
+	}
+	logger.Infof("Copy Block data From %s To %v (Handle : %d)", holder, receivers, handle)
+
+	var response ipc.CreateBlockResponse
+	errors := make([]error, number)
+	for _, receiver := range receivers {
+		oneSizeHandle := []common.BlockHandle{handle}
+		ce := ipc.Single(receiver, "DataNode.CreateBlock", ipc.CreateBlockArgs{
+			Handles: oneSizeHandle,
+		}, &response)
+		if ce != nil {
+			errors = append(errors, ce)
+		}
+	}
+	if len(errors) > 0 {
+		// errors 가공 필요
+		return nil
+	}
+
+	var forwardResponse ipc.ForwardDataResponse
+	fe := ipc.Single(holder, "DataNode.ForwardBlocks", ipc.ForwardDataArgs{
+		Handle: handle,
+		Target: receivers,
+	}, &forwardResponse)
+	if fe != nil {
+		return nil
+	} else {
+		return fe
+	}
+}
+
 func (m *MasterNode) ExpireCheck() error {
 	return nil
 }

@@ -30,6 +30,11 @@ type DataNode struct {
 	logger *logrus.Entry
 }
 
+type Forward struct {
+	target common.NodeAddress
+	err error
+}
+
 
 func Run(rootDir string, addr, masterAddr common.NodeAddress, nodeType common.NodeType) {
 	d := &DataNode{
@@ -130,7 +135,7 @@ func (d *DataNode) CreateBlock(args ipc.CreateBlockArgs, response *ipc.CreateBlo
 		d.logger.Infof("Format: %s", BlockFileFormat(d.rootDir, handle))
 		osErr := createBlockFile(BlockFileFormat(d.rootDir, handle))
 		if osErr != nil {
-			d.logger.Errorf("ERROR OCCURRED DURING CREATE FILE: %d\n%v", handle, osErr.Error())
+			d.logger.Errorf("ERROR OCCURRED DURING CREATE LOCAL FILE: %d\n%v", handle, osErr.Error())
 			return osErr
 		}
 		d.blockMap[handle] = &Block{
@@ -234,6 +239,48 @@ func  (d *DataNode) writeFile(filename string, offset common.Offset, data []byte
 	}
 
 	return n, nil
+}
+
+func (d * DataNode) ForwardBlocks(args ipc.ForwardDataArgs, response *ipc.ForwardDataResponse) error {
+	blockInfo, exist := d.blockMap[args.Handle]
+	if !exist {
+		return fmt.Errorf("BLOCK DOES NOT EXIST (HANDLE: %d)", args.Handle)
+	}
+	blockInfo.RLock()
+	buffer := make([]byte, blockInfo.length)
+	blockInfo.RUnlock()
+	filename := BlockFileFormat(d.rootDir, args.Handle)
+	_, err := d.readFile(filename, 0, buffer)
+	if err != nil {
+		return fmt.Errorf("ERROR OCCURRED DURING READ FILE - %s", filename)
+	}
+	forwardChannel := make(chan Forward, 2)
+	defer close(forwardChannel)
+	timeoutChannel := time.After(10*time.Second) // temp
+	var errMsg string
+
+	for _, target := range args.Target {
+		go func(){
+			err := d.forwardBlockData(target, buffer, args.Handle, 0)
+			forwardChannel <- Forward{
+				target: target,
+				err: err,
+			}
+		}()
+	}
+	// get result from channel
+	for {
+		select {
+			case result := <- forwardChannel:
+				if result.err != nil {
+					errMsg += fmt.Sprintf("BLOCK %d FAILED TO FORWARD DATA TO %s\n", args.Handle, result.target)
+					errMsg += result.err.Error()
+				}
+			case <- timeoutChannel:
+				return fmt.Errorf("WRITE FILE TIMEOUT DURING FORWARD BLOCK %d\n Result: %s", args.Handle, errMsg)
+		}
+	}
+	return nil
 }
 
 func (d *DataNode) forwardBlockData(target common.NodeAddress, data []byte,

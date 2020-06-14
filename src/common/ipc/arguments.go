@@ -26,7 +26,7 @@ type WriteBlockResponse struct {
 
 type ForwardDataArgs struct {
 	Handle common.BlockHandle
-	Data []byte
+	//Data []byte
 	Target []common.NodeAddress
 }
 

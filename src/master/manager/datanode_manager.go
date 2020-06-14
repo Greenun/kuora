@@ -97,10 +97,32 @@ func (manager *DataNodeManager) SelectReplication(number int) ([]common.NodeAddr
 
 }
 
-func (manager *DataNodeManager) SelectReReplication(number int, block common.BlockHandle) ([]common.NodeAddress, error) {
+func (manager *DataNodeManager) SelectReReplication(number int, handle common.BlockHandle) (common.NodeAddress, []common.NodeAddress, error) {
 	// select server for re-replication
 	// do not have specific block
-	return nil, nil // temp
+
+	// for HOT Nodes -- not enough time
+	manager.RLock()
+	defer manager.RUnlock()
+
+	var holder common.NodeAddress
+	var receivers []common.NodeAddress
+
+	for addr, node := range manager.HotNodes {
+		_, exist := node.Blocks[handle]
+		if !exist {
+			receivers = append(receivers, addr)
+		} else{
+			if len(holder) == 0 {
+				holder = addr
+			}
+		}
+		if len(receivers) >= number && len(holder) > 0 {
+			return holder, receivers, nil
+		}
+	}
+
+	return "", nil, fmt.Errorf("NOT ENOUGH NODES FOR REPLICATION")
 }
 
 func (manager *DataNodeManager) HealthCheckNodes() map[common.NodeType][]common.NodeAddress {
