@@ -232,12 +232,33 @@ func (m *MasterNode) ListKeys(args ipc.ListKeysArgs, response *ipc.ListKeysRespo
 	return nil
 }
 
-func (m *MasterNode) Rearrange() error {
+func (m *MasterNode) rearrange() error {
 	// perform re replication for all requiring copy
+	handles := m.blockManager.RequiredCheck()
+	logger.Infof("Replication Required For : %v", handles)
+	if handles != nil {
+		m.blockManager.RLock()
+		for _, handle := range handles {
+			logger.Infof("Replicate %v", handle)
+			blockInfo := m.blockManager.Blocks[handle]
+			blockInfo.Lock()
+			num := common.ReplicaNum - len(blockInfo.Locations)
+			err := m.reReplication(handle, num)
+			if err != nil {
+				logger.Errorf("ERROR DURING RE-REPLICATION FOR HANDLE %d - %v", handle, err.Error())
+			}
+			blockInfo.Unlock()
+		}
+		m.blockManager.RUnlock()
+	}
 	return nil
 }
 
 func (m *MasterNode) reReplication(handle common.BlockHandle, number int) error {
+	if number < 1 {
+		logger.Warningf("No Need to Replicate Block for handle - %d", handle)
+		return nil
+	}
 	holder, receivers, err := m.dataNodeManager.SelectReReplication(number, handle)
 	if err != nil {
 		return err

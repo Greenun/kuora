@@ -111,6 +111,7 @@ func (blockManager *BlockManager) AddBlock(key common.HotKey) error {
 }
 
 func (blockManager *BlockManager) SweepBlocks(handles []common.BlockHandle, address common.NodeAddress) error {
+	primary := false
 	errorMsg := ""
 	for _, handle := range handles {
 		blockManager.RLock()
@@ -118,6 +119,9 @@ func (blockManager *BlockManager) SweepBlocks(handles []common.BlockHandle, addr
 		blockManager.RUnlock()
 		if !exist {
 			logger.Warningf("Block %d Does Not Exist", handle)
+		}
+		if block.Primary == address {
+			primary = true
 		}
 		block.Lock()
 		var remains []common.NodeAddress
@@ -128,6 +132,10 @@ func (blockManager *BlockManager) SweepBlocks(handles []common.BlockHandle, addr
 		}
 		block.Locations = remains
 		numReplicas := len(remains)
+		// change primary node
+		if primary && numReplicas > 0 {
+			block.Primary = remains[0]
+		}
 		block.Unlock()
 
 		if numReplicas == 0 {
@@ -144,5 +152,51 @@ func (blockManager *BlockManager) SweepBlocks(handles []common.BlockHandle, addr
 		return nil
 	} else {
 		return fmt.Errorf(errorMsg)
+	}
+}
+
+func (blockManager *BlockManager) registerBlocks(handle common.BlockHandle,
+	address common.NodeAddress, primary bool) error {
+	blockManager.RLock()
+	blockInfo, exist := blockManager.Blocks[handle]
+	blockManager.RUnlock()
+	if !exist {
+		return fmt.Errorf("BLOCK DOES NOT EXIST - function: registerBlocks")
+	}
+	blockInfo.Locations = append(blockInfo.Locations, address)
+	if primary {
+		blockInfo.Primary = address
+	}
+	return nil
+}
+
+func (blockManager *BlockManager) RequiredCheck() []common.BlockHandle {
+	requiredHandles := make([]common.BlockHandle, 0)
+	blockManager.RLock()
+	for _, handle := range blockManager.RequireCopy {
+		if len(blockManager.Blocks[handle].Locations) < common.ReplicaNum {
+			requiredHandles = append(requiredHandles, handle)
+		}
+	}
+	blockManager.RUnlock()
+
+	// required handle duplicate check
+	checkedHandles := make([]common.BlockHandle, 0)
+	existMap := make(map[common.BlockHandle]bool)
+	for _, handle := range requiredHandles {
+		if _, exist := existMap[handle]; !exist {
+			existMap[handle] = true
+			checkedHandles = append(checkedHandles, handle)
+		}
+	}
+	blockManager.Lock()
+	blockManager.RequireCopy = make([]common.BlockHandle, len(checkedHandles))
+	copy(blockManager.RequireCopy, checkedHandles)
+	blockManager.Unlock()
+
+	if len(blockManager.RequireCopy) > 0 {
+		return blockManager.RequireCopy
+	} else {
+		return nil
 	}
 }

@@ -148,7 +148,7 @@ func (manager *DataNodeManager) HealthCheckNodes() map[common.NodeType][]common.
 func (manager *DataNodeManager) RemoveNode(address common.NodeAddress, nt common.NodeType) ([]common.BlockHandle, error) {
 	manager.Lock()
 	defer manager.Unlock()
-	handles := make([]common.BlockHandle, 16) // temp
+	handles := make([]common.BlockHandle, 0)
 	var target map[common.NodeAddress]*Node
 	if nt == common.HOT {
 		target = manager.HotNodes
