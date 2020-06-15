@@ -45,7 +45,7 @@ func generateKey(prev common.BlockHandle, numBlock int, offset common.Offset) co
 }
 
 func (blockManager *BlockManager) CreateBlocks(addrs []common.NodeAddress,
-	numBlock int) (common.HotKey, []common.NodeAddress, error) {
+	numBlock int) (common.HotKey, []common.BlockHandle, error) {
 	// create file with number of blocks
 	blockManager.Lock()
 	defer blockManager.Unlock()
@@ -53,12 +53,13 @@ func (blockManager *BlockManager) CreateBlocks(addrs []common.NodeAddress,
 	blockHandle := blockManager.HandleCount
 	start := int(blockHandle)
 	blockManager.HandleCount += common.BlockHandle(numBlock)
-
+	blocks := make([]common.BlockHandle, 0)
 	// generate file key
 	key := generateKey(blockHandle, numBlock, 0)
 	file := new(FileInfo)
 	for i := 0; i < numBlock; i++ {
 		file.Blocks = append(file.Blocks, common.BlockHandle(start + i))
+		blocks = append(blocks, common.BlockHandle(start + i))
 	}
 	blockManager.Files[key] = file
 
@@ -92,9 +93,7 @@ func (blockManager *BlockManager) CreateBlocks(addrs []common.NodeAddress,
 		blockManager.Blocks[handle].Primary = blockManager.Blocks[handle].Locations[0]
 		logger.Infof("Create Block Info - %v", blockManager.Blocks[handle])
 	}
-
-
-	return key, addrs, nil
+	return key, blocks, nil
 }
 
 func (blockManager *BlockManager) AddBlock(key common.HotKey) error {
@@ -110,7 +109,24 @@ func (blockManager *BlockManager) AddBlock(key common.HotKey) error {
 	return nil
 }
 
+func (blockManager *BlockManager) CopyCompleted(handles []common.BlockHandle) error {
+	newList := make([]common.BlockHandle, 0)
+	existMap := make(map[common.BlockHandle]bool)
+	for _, handle := range handles {
+		existMap[handle] = true
+	}
+	for _, origin := range blockManager.RequireCopy {
+		if _, exist := existMap[origin]; !exist {
+			newList = append(newList, origin)
+		}
+	}
+	// change new list
+	blockManager.RequireCopy = newList
+	return nil
+}
+
 func (blockManager *BlockManager) SweepBlocks(handles []common.BlockHandle, address common.NodeAddress) error {
+	logger.Infof("HANDLES : %v", handles)
 	primary := false
 	errorMsg := ""
 	for _, handle := range handles {
@@ -130,6 +146,7 @@ func (blockManager *BlockManager) SweepBlocks(handles []common.BlockHandle, addr
 				remains = append(remains, a)
 			}
 		}
+		logger.Infof("block - %v", block)
 		block.Locations = remains
 		numReplicas := len(remains)
 		// change primary node

@@ -59,6 +59,7 @@ func Run(address common.NodeAddress, rootDir string) *MasterNode {
 	go func(){
 		healthCheckTick := time.Tick(common.HealthCheckInterval)
 		expireTick := time.Tick(common.ExpireInterval)
+		rearrangeTick := time.Tick(common.RearrangeInterval)
 		var err error
 		for {
 			select {
@@ -66,7 +67,8 @@ func Run(address common.NodeAddress, rootDir string) *MasterNode {
 					err = masterNode.healthCheck()
 				case <- expireTick:
 					err = masterNode.ExpireCheck()
-
+				case <- rearrangeTick:
+					err = masterNode.rearrange()
 			}
 			if err != nil {
 				logger.Errorf("ERROR OCCURED DURING BACKGROUND TASK - %s", err.Error())
@@ -138,13 +140,6 @@ func (m *MasterNode) GetBlockInfo(args ipc.GetBlockInfoArgs, response *ipc.GetBl
 
 func (m *MasterNode) HeartbeatResponse(args ipc.HeartBeatArgs, response *ipc.HeartBeatResponse) error {
 	m.dataNodeManager.Heartbeat(args.Address, args.DNType, response)
-	//if nodeType == common.HOT {
-	//
-	//} else if nodeType == common.COLD {
-	//
-	//} else {
-	//	return fmt.Errorf("UNVALID NODE TYPE")
-	//}
 
 	return nil
 }
@@ -153,17 +148,17 @@ func (m *MasterNode) CreateFile(args ipc.CreateFileArgs, response *ipc.CreateFil
 	logger.Info("Create File Operation")
 	length := args.Length
 	blockNum := int(math.Ceil(float64(length) / float64(common.BlockSize)))
-	//selectedNodes, err := m.dataNodeManager.SelectReplication(common.ReplicaNum)
-	selectedNodes, err := m.dataNodeManager.SelectReplication(2)
+	selectedNodes, err := m.dataNodeManager.SelectReplication(common.ReplicaNum)
 	if err != nil {
 		logger.Errorf("ERROR DURING CREATE FILE: %v", err)
 		return err
 	}
-	key, _, opErr := m.blockManager.CreateBlocks(selectedNodes, blockNum)
+	key, blocks, opErr := m.blockManager.CreateBlocks(selectedNodes, blockNum)
 	if opErr != nil {
 		response.ErrCode = 1
 		return opErr
 	}
+	m.dataNodeManager.AddBlocks(blocks, selectedNodes)
 	response.Key = key
 	response.ErrCode = 0 // temp
 	return nil
@@ -213,7 +208,10 @@ func (m *MasterNode) healthCheck() error {
 			return fmt.Errorf("ERROR OCCURRED DURING REMOVE NODE - %s", err.Error())
 		}
 		logger.Infof("Sweep Block Phase")
-		m.blockManager.SweepBlocks(handles, hotDead)
+		err = m.blockManager.SweepBlocks(handles, hotDead)
+		if err != nil {
+			return fmt.Errorf("ERROR DURING SWEEP : %s", err.Error())
+		}
 	}
 
 	for _, coldDead := range deadNodes[common.COLD] {
@@ -228,16 +226,27 @@ func (m *MasterNode) healthCheck() error {
 	return nil
 }
 
+// for debug
 func (m *MasterNode) ListKeys(args ipc.ListKeysArgs, response *ipc.ListKeysResponse) error {
 	return nil
 }
+
+func (m *MasterNode) NodeStatus() error {
+	return nil
+}
+
+func (m *MasterNode) getNodeReport() error {
+	return nil
+}
+//
 
 func (m *MasterNode) rearrange() error {
 	// perform re replication for all requiring copy
 	handles := m.blockManager.RequiredCheck()
 	logger.Infof("Replication Required For : %v", handles)
+	succeed := make([]common.BlockHandle, 0)
 	if handles != nil {
-		m.blockManager.RLock()
+		//m.blockManager.RLock()
 		for _, handle := range handles {
 			logger.Infof("Replicate %v", handle)
 			blockInfo := m.blockManager.Blocks[handle]
@@ -246,10 +255,13 @@ func (m *MasterNode) rearrange() error {
 			err := m.reReplication(handle, num)
 			if err != nil {
 				logger.Errorf("ERROR DURING RE-REPLICATION FOR HANDLE %d - %v", handle, err.Error())
+			} else {
+				succeed = append(succeed, handle)
 			}
 			blockInfo.Unlock()
 		}
-		m.blockManager.RUnlock()
+		m.blockManager.CopyCompleted(succeed)
+		//m.blockManager.RUnlock()
 	}
 	return nil
 }

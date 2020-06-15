@@ -6,7 +6,6 @@ import (
 )
 
 type Node struct {
-	//blocks []common.BlockHandle
 	Blocks map[common.BlockHandle]bool
 	Garbage []common.BlockHandle
 

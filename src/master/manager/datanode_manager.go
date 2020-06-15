@@ -170,6 +170,17 @@ func (manager *DataNodeManager) RemoveNode(address common.NodeAddress, nt common
 	return handles, nil // temp
 }
 
+// add block map during create file
+func (manager *DataNodeManager) AddBlocks(handles []common.BlockHandle, addrs []common.NodeAddress) error {
+	for _, addr := range addrs {
+		nodeInfo, _ := manager.HotNodes[addr]
+		for _, handle := range handles {
+			nodeInfo.Blocks[handle] = true
+		}
+	}
+	return nil
+}
+
 func (manager *DataNodeManager) PushGarbage(handle common.BlockHandle,
 	address common.NodeAddress, dnt common.NodeType) error {
 	if dnt == common.HOT {
