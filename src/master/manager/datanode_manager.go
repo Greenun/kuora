@@ -12,15 +12,15 @@ import (
 
 type DataNodeManager struct {
 	sync.RWMutex
-	HotNodes map[common.NodeAddress]*Node
-	ColdNodes map[common.NodeAddress]*Node
+	HotNodes map[common.NodeAddress]*common.Node
+	ColdNodes map[common.NodeAddress]*common.Node
 }
 
 func NewDataNodeManager() *DataNodeManager {
 	logger.Info("INIT NEW DATANODE MANAGER")
 	dataNodeManager := &DataNodeManager{
-		HotNodes:   make(map[common.NodeAddress]*Node),
-		ColdNodes:   make(map[common.NodeAddress]*Node),
+		HotNodes:   make(map[common.NodeAddress]*common.Node),
+		ColdNodes:   make(map[common.NodeAddress]*common.Node),
 	}
 	return dataNodeManager
 }
@@ -29,14 +29,14 @@ func (manager *DataNodeManager) Heartbeat(address common.NodeAddress, nodeType c
 	response *ipc.HeartBeatResponse) bool {
 	manager.Lock()
 	defer manager.Unlock()
-	var nodeInfo *Node
+	var nodeInfo *common.Node
 	var exist bool
 	if nodeType == common.HOT {
 		nodeInfo, exist = manager.HotNodes[address]
 		if !exist {
 			// not exist == first beat
 			logger.Infof("New DataNode %s", address)
-			manager.HotNodes[address] = &Node{
+			manager.HotNodes[address] = &common.Node{
 				Blocks: make(map[common.BlockHandle]bool),
 				Garbage: make([]common.BlockHandle, 0),
 				LastBeat: time.Now(),
@@ -55,7 +55,7 @@ func (manager *DataNodeManager) Heartbeat(address common.NodeAddress, nodeType c
 		if !exist {
 			// not exist == first beat
 			logger.Infof("New DataNode %s", address)
-			manager.ColdNodes[address] = &Node{
+			manager.ColdNodes[address] = &common.Node{
 				Blocks: make(map[common.BlockHandle]bool),
 				Garbage: make([]common.BlockHandle, 0),
 				LastBeat: time.Now(),
@@ -149,7 +149,7 @@ func (manager *DataNodeManager) RemoveNode(address common.NodeAddress, nt common
 	manager.Lock()
 	defer manager.Unlock()
 	handles := make([]common.BlockHandle, 0)
-	var target map[common.NodeAddress]*Node
+	var target map[common.NodeAddress]*common.Node
 	if nt == common.HOT {
 		target = manager.HotNodes
 	} else {

@@ -234,7 +234,7 @@ func (m *MasterNode) ListKeys(args ipc.ListKeysArgs, response *ipc.ListKeysRespo
 	return nil
 }
 
-func (m *MasterNode) NodeStatus(args manager.NodeStatusArgs, response *manager.NodeStatusResponse) error {
+func (m *MasterNode) NodeStatus(args ipc.NodeStatusArgs, response *ipc.NodeStatusResponse) error {
 	for address, nodeInfo := range m.dataNodeManager.HotNodes {
 		response.Nodes[address] = nodeInfo
 	}

@@ -104,3 +104,10 @@ type DeleteFileArgs struct {
 type DeleteFileResponse struct {
 	ErrCode common.Code
 }
+
+// for debug
+type NodeStatusArgs struct {}
+
+type NodeStatusResponse struct {
+	Nodes map[common.NodeAddress]*common.Node
+}
