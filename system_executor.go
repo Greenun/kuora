@@ -3,20 +3,10 @@ package main
 import (
 	"common"
 	"fmt"
-	"sync"
-
-	//"bufio"
-	//"common"
 	logger "github.com/Sirupsen/logrus"
-	//"io"
-	//"os"
 	"path"
 	"strconv"
-	//"time"
-
-	//"syscall"
-	//"os"
-	//"os/exec"
+	"sync"
 )
 
 const (

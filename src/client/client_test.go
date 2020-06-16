@@ -94,3 +94,14 @@ func TestReadFileFromRandomOffset(t *testing.T) {
 		}
 	}
 }
+
+func TestClient_Delete(t *testing.T) {
+	for k, _ := range keyMap {
+		err := c.Delete(k)
+		if err != nil {
+			t.Errorf(err.Error())
+		}
+		// only one
+		// break
+	}
+}

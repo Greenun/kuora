@@ -228,14 +228,24 @@ func (m *MasterNode) healthCheck() error {
 
 // for debug
 func (m *MasterNode) ListKeys(args ipc.ListKeysArgs, response *ipc.ListKeysResponse) error {
+	for k, _ := range m.blockManager.Files {
+		response.Keys = append(response.Keys, k)
+	}
 	return nil
 }
 
-func (m *MasterNode) NodeStatus() error {
+func (m *MasterNode) NodeStatus(args manager.NodeStatusArgs, response *manager.NodeStatusResponse) error {
+	for address, nodeInfo := range m.dataNodeManager.HotNodes {
+		response.Nodes[address] = nodeInfo
+	}
 	return nil
 }
 
-func (m *MasterNode) getNodeReport() error {
+func (m *MasterNode) nodeBlockReport() error {
+	return nil
+}
+
+func (m *MasterNode) detailNodeReport() error {
 	return nil
 }
 //
@@ -287,6 +297,9 @@ func (m *MasterNode) reReplication(handle common.BlockHandle, number int) error 
 		if ce != nil {
 			errors = append(errors, ce)
 		}
+		//
+		m.dataNodeManager.HotNodes[receiver].Blocks[handle] = true
+		//
 	}
 	if len(errors) > 0 {
 		// errors 가공 필요

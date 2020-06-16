@@ -226,5 +226,15 @@ func (c *Client) Delete(key common.HotKey) error {
 }
 
 func (c *Client) ListKeys() error {
+	var response ipc.ListKeysResponse
+	err := ipc.Single(c.master, "MasterNode.ListKeys", ipc.ListKeysArgs{}, &response)
+	if err != nil {
+		return fmt.Errorf("LIST KEY ERROR - %s", err.Error())
+	}
+	return nil
+}
+
+func (c *Client) NodeStatus() error {
+
 	return nil
 }

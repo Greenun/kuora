@@ -11,3 +11,11 @@ type Node struct {
 
 	LastBeat time.Time
 }
+
+
+// for debug
+type NodeStatusArgs struct {}
+
+type NodeStatusResponse struct {
+	Nodes map[common.NodeAddress]*Node
+}
