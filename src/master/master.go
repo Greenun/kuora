@@ -115,6 +115,7 @@ func (m *MasterNode) GetFileMetadata(args ipc.GetMetadataArgs, response *ipc.Get
 		fileInfo.RLock()
 		defer fileInfo.RUnlock()
 		response.BlockHandles = fileInfo.Blocks
+		response.Length = fileInfo.Length
 	}
 	return nil
 }
@@ -153,7 +154,7 @@ func (m *MasterNode) CreateFile(args ipc.CreateFileArgs, response *ipc.CreateFil
 		logger.Errorf("ERROR DURING CREATE FILE: %v", err)
 		return err
 	}
-	key, blocks, opErr := m.blockManager.CreateBlocks(selectedNodes, blockNum)
+	key, blocks, opErr := m.blockManager.CreateBlocks(selectedNodes, blockNum, int64(length))
 	if opErr != nil {
 		response.ErrCode = 1
 		return opErr

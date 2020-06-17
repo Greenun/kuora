@@ -28,35 +28,44 @@ func (h *RequestHandler) CreateHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		logger.Errorf(err.Error())
 	}
-	logger.Infof("body - %v", body.Data)
-	buffer := make([]byte, len(body.Data))
-	key, cerr := h.client.Create(uint64(len(buffer)))
+	logger.Infof("Create And Write Operation - body: %s", body.Data)
+	key, cerr := h.client.Create(uint64(len(body.Data)))
 	if cerr != nil {
 		logger.Errorf(cerr.Error())
 	}
 	// write data
+	buffer := []byte(body.Data)
+	logger.Infof("length: %d, buffer: %v", len(buffer), buffer)
 	h.handleWrite(key, buffer)
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(key))
-	//h.handleWrite()
 }
 
 func (h *RequestHandler) ReadHandler(w http.ResponseWriter, r *http.Request) {
+	logger.Infof("Read Operation")
 	vars := mux.Vars(r)
 	logger.Infof("%v", vars)
 	key := vars["key"]
-	length, _ := strconv.Atoi(vars["length"])
+	length, perr := strconv.Atoi(vars["length"])
+	if perr != nil {
+		logger.Errorf("PARSE INT ERROR - LENGTH")
+	}
 	buffer := make([]byte, length) // temp
-	_, err := h.client.Read(common.HotKey(key), 0, buffer)
+	offset, perr := strconv.ParseInt(vars["offset"], 10, 64)
+	if perr != nil {
+		logger.Errorf("PARSE INT ERROR - OFFSET")
+	}
+	_, err := h.client.Read(common.HotKey(key), common.Offset(offset), buffer)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write(buffer)
 	}
+	logger.Infof("buffer: %v", buffer)
 	w.WriteHeader(http.StatusOK)
 	w.Write(buffer)
 }
 func (h *RequestHandler) DeleteHandler(w http.ResponseWriter, r *http.Request) {
-
+	//vars := mux.Vars(r)
 }
 
 func (h *RequestHandler) ListHandler(w http.ResponseWriter, r *http.Request) {

@@ -39,16 +39,21 @@
             })
         }
         function read() {
+            let url = "/read/"
             const key = document.getElementById("key").value
             const length = document.getElementById("length").value
             const offset = document.getElementById("offset").value
-            fetch("/read", {
+            params = {
+                key: key,
+                length: length,
+                offset: offset,
+            }
+            Object.keys(params).forEach(k => {
+                url += params[k] + "/"
+            })
+
+            fetch(url.slice(0, -1), {
                 method: 'GET',
-                body: {
-                    key: key,
-                    length: length,
-                    offset: offset
-                }
             })
             .then(response => response.text())
             .then(text => {

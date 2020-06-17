@@ -27,7 +27,7 @@ func RunWebServer() {
 	// register handlers
 	r.HandleFunc("/", ServeHttp)
 	r.HandleFunc("/create", rh.CreateHandler).Methods("POST") // Create + Write
-	r.HandleFunc("/read/{key}", rh.ReadHandler)
+	r.HandleFunc("/read/{key}/{length}/{offset}", rh.ReadHandler)
 	r.HandleFunc("/delete/{key}", rh.DeleteHandler)
 	r.HandleFunc("/list", rh.ListHandler)
 	r.HandleFunc("/status", rh.StatusHandler)

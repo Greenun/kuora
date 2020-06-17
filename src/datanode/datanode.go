@@ -161,7 +161,7 @@ func (d *DataNode) ReadBlock(args ipc.ReadBlockArgs, response *ipc.ReadBlockResp
 	filename := BlockFileFormat(d.rootDir, handle)
 	response.Data = make([]byte, args.Length)
 	blockInfo.RLock()
-	n, err := d.readFile(filename, args.Offset, response.Data)
+	n, err := d.readFile(filename, common.Offset(args.Offset), response.Data)
 	blockInfo.RUnlock()
 
 	if err != nil {

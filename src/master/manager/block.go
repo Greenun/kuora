@@ -20,4 +20,5 @@ type Block struct {
 type FileInfo struct {
 	sync.RWMutex
 	Blocks []common.BlockHandle
+	Length int64
 }

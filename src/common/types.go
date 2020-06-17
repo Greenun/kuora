@@ -6,7 +6,7 @@ type NodeAddress string
 
 type Code int
 
-type Offset uint64
+type Offset int64
 type BlockHandle uint64
 type Checksum int64
 type BlockIndex int32

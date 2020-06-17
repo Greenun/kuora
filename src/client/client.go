@@ -32,19 +32,19 @@ func (c *Client) Create(length uint64) (common.HotKey, error) {
 	return fileKey, nil
 }
 
-func (c *Client) GetMetadata(key common.HotKey) ([]common.BlockHandle, error){
+func (c *Client) GetMetadata(key common.HotKey) ([]common.BlockHandle, int64, error){
 	var getMetadata ipc.GetMetadataResponse
 	err := ipc.Single(c.master, "MasterNode.GetFileMetadata", ipc.GetMetadataArgs{FileKey: key}, &getMetadata)
 	if err != nil {
 		// handle error
-		return nil, err
+		return nil, 0, err
 	}
-	return getMetadata.BlockHandles, nil
+	return getMetadata.BlockHandles, getMetadata.Length,nil
 }
 
 func (c *Client) Read(key common.HotKey, offset common.Offset, buffer []byte) (int64, error) {
 	//(int64, []byte, error)
-	handles, err := c.GetMetadata(key)
+	handles, length, err := c.GetMetadata(key)
 	if err != nil {
 		return -1, err
 	}
@@ -53,9 +53,14 @@ func (c *Client) Read(key common.HotKey, offset common.Offset, buffer []byte) (i
 	}
 	var current int64 = 0
 	blockBuffer := make([]byte, len(buffer))
-	bufferLength := int64(len(buffer))
+	var bound int64
+	if int64(len(buffer)) + int64(offset) > length {
+		bound = length - int64(offset)
+	} else {
+		bound = int64(len(buffer))
+	}
 	// read for length of buffer
-	for current < bufferLength {
+	for current < bound {
 		idx := common.BlockIndex(offset / common.BlockSize)
 		blockOffset := offset % common.BlockSize
 		if int(idx) >= len(handles) {
@@ -114,11 +119,12 @@ func (c *Client) ReadBlock(handle common.BlockHandle, offset common.Offset, buff
 		)
 		if err != nil {
 			// temp
-			logger.Errorf("ERROR OCCURRED DURING READ BLOCK %d from %s", handle, locations[randomIndex])
+			logger.Errorf("ERROR OCCURRED DURING READ BLOCK %d from %s - %v", handle, locations[randomIndex], err.Error())
 			//fmt.Errorf("ERROR OCCURRED DURING READ BLOCK %d from %s", handle, locations[randomIndex])
 		} else {
 			logger.Infof("Read Data From Node %v", locations[randomIndex])
 			copy(buffer, readResponse.Data) // dump bytes
+			logger.Infof("DATA: %v, %v, %v, %d", buffer, readResponse.Data, readResponse.ErrCode, readResponse.Length)
 			break
 		}
 	}
@@ -132,7 +138,7 @@ func (c *Client) ReadBlock(handle common.BlockHandle, offset common.Offset, buff
 }
 
 func (c *Client) Write(key common.HotKey, offset common.Offset, data []byte) error {
-	handles, err := c.GetMetadata(key)
+	handles, _, err := c.GetMetadata(key)
 	if err != nil {
 		return err
 	}
@@ -231,10 +237,10 @@ func (c *Client) ListKeys() ([]common.HotKey, error) {
 	if err != nil {
 		return nil, fmt.Errorf("LIST KEY ERROR - %s", err.Error())
 	}
-	logger.Infof("Keys - - -")
-	for i, key := range response.Keys {
-		logger.Infof("%d: %s", i+1, key)
-	}
+	//logger.Infof("Keys - - -")
+	//for i, key := range response.Keys {
+	//	logger.Infof("%d: %s", i+1, key)
+	//}
 	return response.Keys, nil
 }
 
@@ -244,9 +250,9 @@ func (c *Client) NodeStatus() (map[common.NodeAddress]*common.Node ,error) {
 	if err != nil {
 		return nil, fmt.Errorf("NODE STATUS ERROR - %s", err.Error())
 	}
-	for k, v := range response.Nodes {
-		logger.Infof("%s : %v", k, v)
-	}
+	//for k, v := range response.Nodes {
+	//	logger.Infof("%s : %v", k, v)
+	//}
 
 	return response.Nodes, nil
 }

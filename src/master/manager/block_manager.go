@@ -45,7 +45,7 @@ func generateKey(prev common.BlockHandle, numBlock int, offset common.Offset) co
 }
 
 func (blockManager *BlockManager) CreateBlocks(addrs []common.NodeAddress,
-	numBlock int) (common.HotKey, []common.BlockHandle, error) {
+	numBlock int, length int64) (common.HotKey, []common.BlockHandle, error) {
 	// create file with number of blocks
 	blockManager.Lock()
 	defer blockManager.Unlock()
@@ -61,6 +61,7 @@ func (blockManager *BlockManager) CreateBlocks(addrs []common.NodeAddress,
 		file.Blocks = append(file.Blocks, common.BlockHandle(start + i))
 		blocks = append(blocks, common.BlockHandle(start + i))
 	}
+	file.Length = length
 	blockManager.Files[key] = file
 
 	rpcErrors := map[common.NodeAddress]error{}
