@@ -89,7 +89,7 @@ func TestReadFileFromRandomOffset(t *testing.T) {
 }
 
 func TestClient_ListKeys(t *testing.T) {
-	err := c.ListKeys()
+	_, err := c.ListKeys()
 	if err != nil {
 		t.Fail()
 	}
@@ -97,7 +97,7 @@ func TestClient_ListKeys(t *testing.T) {
 }
 
 func TestClient_NodeStatus(t *testing.T) {
-	err := c.NodeStatus()
+	_, err := c.NodeStatus()
 	if err != nil {
 		t.Fail()
 	}

@@ -1,4 +1,3 @@
-//package kuora
 package main
 
 import (
@@ -7,7 +6,6 @@ import (
 	"fmt"
 	logger "github.com/Sirupsen/logrus"
 	"master"
-	"os"
 )
 
 func runMaster(address common.NodeAddress, rootDir string) {
@@ -24,45 +22,45 @@ func runDataNode(address, masterAddress common.NodeAddress, rootDir string, node
 	<- ch
 }
 
-func main() {
+func runDaemon(args []string) {
 	logger.SetLevel(logger.DebugLevel)
 
 	ch := make(chan bool, 1)
-	if len(os.Args) < 2 {
+	if len(args) < 2 {
+		fmt.Println("Run Executor")
 		go func(){
 			Executor(2)
 		}()
-		//fmt.Println("Insufficient Arguments")
-		//return
 		<- ch
 	}
 
-	if os.Args[1] == "master" {
-		if len(os.Args) < 4 {
+	if args[1] == "master" {
+		if len(args) < 4 {
 			fmt.Println("Not Enough Arguments for Master")
 			return
 		}
-		address := common.NodeAddress(os.Args[2])
-		rootDir := os.Args[3]
+		address := common.NodeAddress(args[2])
+		rootDir := args[3]
 		runMaster(address, rootDir)
 
-	} else if os.Args[1] == "datanode" {
-		if len(os.Args) < 6 {
+	} else if args[1] == "datanode" {
+		if len(args) < 6 {
 			fmt.Println("Not Enough Arguments for DataNode")
 			return
 		}
-		address := common.NodeAddress(os.Args[2])
-		masterAddress := common.NodeAddress(os.Args[3])
-		rootDir := os.Args[4]
+		address := common.NodeAddress(args[2])
+		masterAddress := common.NodeAddress(args[3])
+		rootDir := args[4]
 		var nodeType common.NodeType
-		if os.Args[5] == "hot" {
-			nodeType = common.HOT
-		} else if os.Args[5] == "cold" {
-			nodeType = common.COLD
-		} else {
-			fmt.Errorf("INVALID NODE TYPE")
-			return
-		}
+		nodeType = common.HOT
+		//if args[5] == "hot" {
+		//	nodeType = common.HOT
+		//} else if args[5] == "cold" {
+		//	nodeType = common.COLD
+		//} else {
+		//	fmt.Errorf("INVALID NODE TYPE")
+		//	return
+		//}
 		runDataNode(address, masterAddress, rootDir, nodeType)
 	} else {
 		fmt.Println("Invalid Arguments")

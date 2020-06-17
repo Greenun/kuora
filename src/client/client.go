@@ -225,27 +225,28 @@ func (c *Client) Delete(key common.HotKey) error {
 	return nil
 }
 
-func (c *Client) ListKeys() error {
+func (c *Client) ListKeys() ([]common.HotKey, error) {
 	var response ipc.ListKeysResponse
 	err := ipc.Single(c.master, "MasterNode.ListKeys", ipc.ListKeysArgs{}, &response)
 	if err != nil {
-		return fmt.Errorf("LIST KEY ERROR - %s", err.Error())
+		return nil, fmt.Errorf("LIST KEY ERROR - %s", err.Error())
 	}
 	logger.Infof("Keys - - -")
 	for i, key := range response.Keys {
 		logger.Infof("%d: %s", i+1, key)
 	}
-	return nil
+	return response.Keys, nil
 }
 
-func (c *Client) NodeStatus() error {
+func (c *Client) NodeStatus() (map[common.NodeAddress]*common.Node ,error) {
 	var response ipc.NodeStatusResponse
 	err := ipc.Single(c.master, "MasterNode.NodeStatus", ipc.NodeStatusArgs{}, &response)
 	if err != nil {
-		return fmt.Errorf("NODE STATUS ERROR - %s", err.Error())
+		return nil, fmt.Errorf("NODE STATUS ERROR - %s", err.Error())
 	}
 	for k, v := range response.Nodes {
 		logger.Infof("%s : %v", k, v)
 	}
-	return nil
+
+	return response.Nodes, nil
 }
