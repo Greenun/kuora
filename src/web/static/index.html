@@ -9,17 +9,82 @@
         function listKey() {
             fetch('/list')
             .then((response) => {
-                console.log(response)
                 return response.text()
             })
             .then((text) => {
-                alert(text)
+                document.getElementById("keys").innerText = text
             })
         }
         function nodeStatus() {
+            fetch('/status')
+            .then(response => {
+                return response.text()
+            })
+            .then(text => {
+                document.getElementById("nodes").innerText = text
+            })
+        }
+        function write() {
+            const fileData = {data: document.getElementById("data").innerText}
+            fetch('/write', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(fileData)
+            })
+            .then(response => response.json())
+            .then(json => {
+                alert("Result : " + json)
+            })
+        }
+        function read() {
+            const key = document.getElementById("key").innerText
+            fetch("/read", {
+                method: 'GET',
+                body: {key: key}
+            })
+            .then(response => response.text())
+            .then(text => {
+                document.getElementById('read-data').innerText = text
+            })
 
         }
+        function remove() {
+            const key = document.getElementById("key").innerText
+            fetch("/read", {
+                method: 'GET',
+                body: {key: key},
+            })
+            .then(response => response.text())
+            .then(text => {
+                document.getElementById("delete-result").innerText = text
+            })
+        }
+        const list = setInterval(listKey, 5000)
+        const status = setInterval(nodeStatus, 5000)
     </script>
-    <button onclick="listKey()">List Key</button>
+    <div>
+        <h2>KEY LIST</h2>
+        <button onclick="listKey()">List Key</button>
+        <p id="keys"></p>
+    </div>
+    <div>
+        <h2> NODE BLOCKS </h2>
+        <button onclick="nodeStatus()">Get Status</button>
+        <p id="nodes"></p>
+    </div>
+    <div>
+        <input type="text" id="key"/>
+        <button onclick="read()">Read</button>
+        <button onclick="remove()">Delete</button>
+        <p id="read-data"></p>
+        <p id="delete-result"></p>
+    </div>
+    <div>
+        <textarea id="data">
+        </textarea>
+        <button onclick="">Write</button>
+    </div>
 </body>
 </html>

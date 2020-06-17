@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"strconv"
 )
 
 type RequestHandler struct {
@@ -35,6 +36,7 @@ func (h *RequestHandler) ListHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		ret = fmt.Sprintf("REQUEST ERROR - %s", err.Error())
 		w.Write([]byte(ret))
+		return
 	}
 	for i, key := range content {
 		ret += fmt.Sprintf("%d: %s", i+1, key) + "\n"
@@ -44,7 +46,26 @@ func (h *RequestHandler) ListHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *RequestHandler) StatusHandler(w http.ResponseWriter, r *http.Request) {
-
+	logger.Infof("Get Status")
+	content, err := h.client.NodeStatus()
+	ret := ""
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		ret = fmt.Sprintf("REQUEST ERROR - %s", err.Error())
+		w.Write([]byte(ret))
+		return
+	}
+	for address, nodeInfo := range content {
+		ret += string(address) + " - "
+		for key, b := range nodeInfo.Blocks {
+			if b {
+				ret += "Block-" + strconv.Itoa(int(key)) + " | "
+			}
+		}
+		ret += "\n"
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(ret))
 }
 
 func (h *RequestHandler) handleWrite(length int64, data []byte) {

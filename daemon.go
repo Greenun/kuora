@@ -27,7 +27,7 @@ func runDaemon(args []string) {
 
 	ch := make(chan bool, 1)
 	if len(args) < 2 {
-		fmt.Println("Run Executor")
+		logger.Info("Run Executor")
 		go func(){
 			Executor(2)
 		}()
