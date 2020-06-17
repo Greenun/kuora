@@ -5,6 +5,21 @@
     <title>TEST PROJECT</title>
 </head>
 <body>
+    <script>
+        function listKey() {
+            fetch('/list')
+            .then((response) => {
+                console.log(response)
+                return response.text()
+            })
+            .then((text) => {
+                alert(text)
+            })
+        }
+        function nodeStatus() {
 
+        }
+    </script>
+    <button onclick="listKey()">List Key</button>
 </body>
 </html>

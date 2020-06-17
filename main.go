@@ -10,11 +10,7 @@ func main() {
 		return
 	}
 	if os.Args[1] == "web" {
-		if os.Args[2] == "client" {
-			web.RunClient()
-		} else if os.Args[2] == "server" {
-			web.RunWebServer()
-		}
+		web.RunWebServer()
 	} else {
 		runDaemon(os.Args[:])
 	}
