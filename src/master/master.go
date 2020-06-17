@@ -173,8 +173,6 @@ func (m *MasterNode) DeleteFile(args ipc.DeleteFileArgs, response *ipc.DeleteFil
 	if exist {
 		// cold key search
 		logger.Infof("Search for %s", coldKey)
-
-
 	} else {
 		fileInfo, fileExist := m.blockManager.Files[args.Key]
 		if !fileExist {
@@ -189,6 +187,8 @@ func (m *MasterNode) DeleteFile(args ipc.DeleteFileArgs, response *ipc.DeleteFil
 			for _, dn := range blockInfo.Locations {
 				// add garbage
 				m.dataNodeManager.PushGarbage(handle, dn, common.HOT)
+				// delete block exist map
+				delete(m.dataNodeManager.HotNodes[dn].Blocks, handle)
 			}
 			m.dataNodeManager.Unlock()
 			// block delete
@@ -255,7 +255,9 @@ func (m *MasterNode) detailNodeReport() error {
 func (m *MasterNode) rearrange() error {
 	// perform re replication for all requiring copy
 	handles := m.blockManager.RequiredCheck()
-	logger.Infof("Replication Required For : %v", handles)
+	if len(handles) > 0 {
+		logger.Infof("Replication Required For : %v", handles)
+	}
 	succeed := make([]common.BlockHandle, 0)
 	if handles != nil {
 		//m.blockManager.RLock()
@@ -290,7 +292,7 @@ func (m *MasterNode) reReplication(handle common.BlockHandle, number int) error 
 	logger.Infof("Copy Block data From %s To %v (Handle : %d)", holder, receivers, handle)
 
 	var response ipc.CreateBlockResponse
-	errors := make([]error, number)
+	errors := make([]error, 0)
 	for _, receiver := range receivers {
 		oneSizeHandle := []common.BlockHandle{handle}
 		ce := ipc.Single(receiver, "DataNode.CreateBlock", ipc.CreateBlockArgs{
@@ -301,11 +303,12 @@ func (m *MasterNode) reReplication(handle common.BlockHandle, number int) error 
 		}
 		//
 		m.dataNodeManager.HotNodes[receiver].Blocks[handle] = true
+		m.blockManager.Blocks[handle].Locations = append(m.blockManager.Blocks[handle].Locations, receiver)
 		//
 	}
 	if len(errors) > 0 {
-		// errors 가공 필요
-		return nil
+		logger.Errorf("%v", errors)
+		//return nil
 	}
 
 	var forwardResponse ipc.ForwardDataResponse

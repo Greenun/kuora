@@ -45,7 +45,7 @@ func (e *Error) Error() (Code, string) {
 
 // config
 const (
-	ReplicaNum = 2 //3 temp
+	ReplicaNum = 2
 	ColdReplicaNum = 1
 	BlockSize = 1 << 19 // 512KB
 

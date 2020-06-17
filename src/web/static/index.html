@@ -63,11 +63,13 @@
         }
         function remove() {
             const key = document.getElementById("key").value
-            fetch("/read", {
+            let url = "/delete/"
+            params = {
+                key: key,
+            }
+            Object.keys(params).forEach(k => {url += params[k] + "/"})
+            fetch(url.slice(0, -1), {
                 method: 'GET',
-                body: {
-                    key: key,
-                },
             })
             .then(response => response.text())
             .then(text => {

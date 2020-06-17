@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"sort"
 	"strconv"
 )
 
@@ -65,7 +66,16 @@ func (h *RequestHandler) ReadHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(buffer)
 }
 func (h *RequestHandler) DeleteHandler(w http.ResponseWriter, r *http.Request) {
-	//vars := mux.Vars(r)
+	vars := mux.Vars(r)
+	key := vars["key"]
+	err := h.client.Delete(common.HotKey(key))
+	if err != nil {
+		logger.Errorf("DELETE FILE ERROR - %s", err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("OK"))
 }
 
 func (h *RequestHandler) ListHandler(w http.ResponseWriter, r *http.Request) {
@@ -95,15 +105,37 @@ func (h *RequestHandler) StatusHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(ret))
 		return
 	}
-	for address, nodeInfo := range content {
-		ret += string(address) + " - "
-		for key, b := range nodeInfo.Blocks {
+	keys := make([]string, 0)
+	// sorting for visual
+	for addr, _ := range content {
+		keys = append(keys, string(addr))
+	}
+	sort.Strings(keys)
+	for _, address := range keys {
+		handleList := make([]int, 0)
+		nodeInfo, _ := content[common.NodeAddress(address)]
+		ret += string(address) + " - | "
+		for handle, b := range nodeInfo.Blocks {
 			if b {
-				ret += "Block-" + strconv.Itoa(int(key)) + " | "
+				handleList = append(handleList, int(handle))
 			}
+		}
+		sort.Ints(handleList)
+		for _, h := range handleList {
+			ret += "Block-" + strconv.Itoa(h) + " | "
 		}
 		ret += "\n"
 	}
+	//
+	//for address, nodeInfo := range content {
+	//	ret += string(address) + " - | "
+	//	for key, b := range nodeInfo.Blocks {
+	//		if b {
+	//			ret += "Block-" + strconv.Itoa(int(key)) + " | "
+	//		}
+	//	}
+	//	ret += "\n"
+	//}
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(ret))
 }

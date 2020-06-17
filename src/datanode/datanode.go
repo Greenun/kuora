@@ -193,6 +193,7 @@ func (d *DataNode) WriteBlock(args ipc.WriteBlockArgs, response *ipc.WriteBlockR
 	d.RLock()
 	blockInfo, exist := d.blockMap[args.Handle]
 	d.RUnlock()
+	d.logger.Infof("Write Block %v", args.Data)
 	if !exist {
 		return fmt.Errorf("BLOCK DOES NOT EXIST - %d", args.Handle)
 	}
@@ -249,38 +250,43 @@ func (d * DataNode) ForwardBlocks(args ipc.ForwardDataArgs, response *ipc.Forwar
 	blockInfo.RLock()
 	buffer := make([]byte, blockInfo.length)
 	blockInfo.RUnlock()
+	//
+	d.logger.Infof("Forward Block - %v", blockInfo)
 	filename := BlockFileFormat(d.rootDir, args.Handle)
 	_, err := d.readFile(filename, 0, buffer)
 	if err != nil {
 		return fmt.Errorf("ERROR OCCURRED DURING READ FILE - %s", filename)
 	}
-	forwardChannel := make(chan Forward, 2)
+	forwardChannel := make(chan Forward, common.ReplicaNum)
 	defer close(forwardChannel)
-	timeoutChannel := time.After(10*time.Second) // temp
-	var errMsg string
-
+	//timeoutChannel := time.After(5*time.Second) // temp
+	//var errMsg string
+	//d.logger.Infof("target: %v | data: %v | handle: %d", args.Target, buffer, args.Handle)
 	for _, target := range args.Target {
 		go func(){
 			err := d.forwardBlockData(target, buffer, args.Handle, 0)
-			forwardChannel <- Forward{
-				target: target,
-				err: err,
+			if err != nil {
+				d.logger.Error(err.Error())
 			}
+			//forwardChannel <- Forward{
+			//	target: target,
+			//	err: err,
+			//}
 		}()
 	}
-	// get result from channel
-	for {
-		select {
-			case result := <- forwardChannel:
-				if result.err != nil {
-					errMsg += fmt.Sprintf("BLOCK %d FAILED TO FORWARD DATA TO %s\n", args.Handle, result.target)
-					errMsg += result.err.Error()
-				}
-			case <- timeoutChannel:
-				return fmt.Errorf("WRITE FILE TIMEOUT DURING FORWARD BLOCK %d\n Result: %s", args.Handle, errMsg)
-		}
-	}
 	return nil
+	// get result from channel
+	//for {
+	//	select {
+	//		case result := <- forwardChannel:
+	//			if result.err != nil {
+	//				errMsg += fmt.Sprintf("BLOCK %d FAILED TO FORWARD DATA TO %s\n", args.Handle, result.target)
+	//				errMsg += result.err.Error()
+	//			}
+	//		case <- timeoutChannel:
+	//			return fmt.Errorf("WRITE FILE TIMEOUT DURING FORWARD BLOCK %d\n Result: %s", args.Handle, errMsg)
+	//	}
+	//}
 }
 
 func (d *DataNode) forwardBlockData(target common.NodeAddress, data []byte,
@@ -323,7 +329,9 @@ func (d *DataNode) forwardBlockData(target common.NodeAddress, data []byte,
 //}
 
 func (d *DataNode) GarbageCollection() error {
-	d.logger.Infof("Garbage Collection For %d blocks", len(d.garbage))
+	if len(d.garbage) > 0 {
+		d.logger.Infof("Garbage Collection For %d blocks", len(d.garbage))
+	}
 	var err error
 	for _, handle := range d.garbage {
 		err = d.RemoveBlock(handle)

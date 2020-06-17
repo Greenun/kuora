@@ -29,7 +29,7 @@ func runDaemon(args []string) {
 	if len(args) < 2 {
 		logger.Info("Run Executor")
 		go func(){
-			Executor(2)
+			Executor(common.ReplicaNum)
 		}()
 		<- ch
 	}
@@ -44,7 +44,7 @@ func runDaemon(args []string) {
 		runMaster(address, rootDir)
 
 	} else if args[1] == "datanode" {
-		if len(args) < 6 {
+		if len(args) < 5 {
 			fmt.Println("Not Enough Arguments for DataNode")
 			return
 		}
