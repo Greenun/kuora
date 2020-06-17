@@ -235,6 +235,7 @@ func (m *MasterNode) ListKeys(args ipc.ListKeysArgs, response *ipc.ListKeysRespo
 }
 
 func (m *MasterNode) NodeStatus(args ipc.NodeStatusArgs, response *ipc.NodeStatusResponse) error {
+	response.Nodes = make(map[common.NodeAddress]*common.Node)
 	for address, nodeInfo := range m.dataNodeManager.HotNodes {
 		response.Nodes[address] = nodeInfo
 	}

@@ -13,13 +13,6 @@ var c = NewClient("127.0.0.1:40000")
 var keyList = make([]common.HotKey, 0)
 var keyMap = make(map[common.HotKey][]byte, 0)
 
-func TestClient_Create(t *testing.T) {
-	//t.Log("Create Operation")
-	//c.Create(10)
-	//c.Create(1000)
-	//c.Create(common.BlockSize + 1)
-}
-
 func TestFlow(t *testing.T) {
 	l1 := int64(10)
 
@@ -95,13 +88,37 @@ func TestReadFileFromRandomOffset(t *testing.T) {
 	}
 }
 
+func TestClient_ListKeys(t *testing.T) {
+	err := c.ListKeys()
+	if err != nil {
+		t.Fail()
+	}
+	t.Log("List Key Ends - - -")
+}
+
+func TestClient_NodeStatus(t *testing.T) {
+	err := c.NodeStatus()
+	if err != nil {
+		t.Fail()
+	}
+	t.Log("List Key Ends - - -")
+}
+
 func TestClient_Delete(t *testing.T) {
+	// delete file for created in this test
 	for k, _ := range keyMap {
 		err := c.Delete(k)
 		if err != nil {
 			t.Errorf(err.Error())
 		}
-		// only one
-		// break
 	}
 }
+
+//func Test_DeleteAll(t *testing.T) {
+//	// delete all
+//	err := c.ListKeys()
+//	if err != nil {
+//		t.Error("LIST ERROR")
+//		t.Fail()
+//	}
+//}
