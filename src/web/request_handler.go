@@ -2,7 +2,10 @@ package web
 
 import (
 	"client"
+	"common"
+	"encoding/json"
 	"fmt"
+	"github.com/gorilla/mux"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -15,14 +18,42 @@ type RequestHandler struct {
 	client *client.Client
 }
 
-func (h *RequestHandler) CreateHandler(w http.ResponseWriter, r *http.Request) {
+type WriteData struct {
+	Data string
+}
 
+func (h *RequestHandler) CreateHandler(w http.ResponseWriter, r *http.Request) {
+	var body WriteData
+	err := json.NewDecoder(r.Body).Decode(&body)
+	if err != nil {
+		logger.Errorf(err.Error())
+	}
+	logger.Infof("body - %v", body.Data)
+	buffer := make([]byte, len(body.Data))
+	key, cerr := h.client.Create(uint64(len(buffer)))
+	if cerr != nil {
+		logger.Errorf(cerr.Error())
+	}
+	// write data
+	h.handleWrite(key, buffer)
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(key))
+	//h.handleWrite()
 }
 
 func (h *RequestHandler) ReadHandler(w http.ResponseWriter, r *http.Request) {
-	//vars := mux.Vars(r)
+	vars := mux.Vars(r)
+	logger.Infof("%v", vars)
+	key := vars["key"]
+	length, _ := strconv.Atoi(vars["length"])
+	buffer := make([]byte, length) // temp
+	_, err := h.client.Read(common.HotKey(key), 0, buffer)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write(buffer)
+	}
 	w.WriteHeader(http.StatusOK)
-
+	w.Write(buffer)
 }
 func (h *RequestHandler) DeleteHandler(w http.ResponseWriter, r *http.Request) {
 
@@ -68,7 +99,11 @@ func (h *RequestHandler) StatusHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(ret))
 }
 
-func (h *RequestHandler) handleWrite(length int64, data []byte) {
+func (h *RequestHandler) handleWrite(key common.HotKey, data []byte) {
+	err := h.client.Write(key, 0, data)
+	if err != nil {
+		logger.Error(err.Error())
+	}
 
 }
 

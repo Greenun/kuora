@@ -26,7 +26,7 @@ func RunWebServer() {
 	r := mux.NewRouter()
 	// register handlers
 	r.HandleFunc("/", ServeHttp)
-	r.HandleFunc("/create", rh.CreateHandler) // Create + Write
+	r.HandleFunc("/create", rh.CreateHandler).Methods("POST") // Create + Write
 	r.HandleFunc("/read/{key}", rh.ReadHandler)
 	r.HandleFunc("/delete/{key}", rh.DeleteHandler)
 	r.HandleFunc("/list", rh.ListHandler)

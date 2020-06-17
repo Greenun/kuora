@@ -24,14 +24,14 @@
                 document.getElementById("nodes").innerText = text
             })
         }
-        function write() {
-            const fileData = {data: document.getElementById("data").innerText}
-            fetch('/write', {
+        function writeFile() {
+            const txt = document.getElementById("data-1").value
+            fetch('/create', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(fileData)
+                body: JSON.stringify({data: txt}),
             })
             .then(response => response.json())
             .then(json => {
@@ -39,10 +39,16 @@
             })
         }
         function read() {
-            const key = document.getElementById("key").innerText
+            const key = document.getElementById("key").value
+            const length = document.getElementById("length").value
+            const offset = document.getElementById("offset").value
             fetch("/read", {
                 method: 'GET',
-                body: {key: key}
+                body: {
+                    key: key,
+                    length: length,
+                    offset: offset
+                }
             })
             .then(response => response.text())
             .then(text => {
@@ -51,10 +57,12 @@
 
         }
         function remove() {
-            const key = document.getElementById("key").innerText
+            const key = document.getElementById("key").value
             fetch("/read", {
                 method: 'GET',
-                body: {key: key},
+                body: {
+                    key: key,
+                },
             })
             .then(response => response.text())
             .then(text => {
@@ -76,15 +84,17 @@
     </div>
     <div>
         <input type="text" id="key"/>
+        <input type="text" id="length" value="10"/>
+        <input type="text" id="offset" value="0"/>
         <button onclick="read()">Read</button>
         <button onclick="remove()">Delete</button>
         <p id="read-data"></p>
         <p id="delete-result"></p>
     </div>
     <div>
-        <textarea id="data">
+        <textarea id="data-1">
         </textarea>
-        <button onclick="">Write</button>
+        <button onclick="writeFile()" oninput="updateText()">Write</button>
     </div>
 </body>
 </html>
