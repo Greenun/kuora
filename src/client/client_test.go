@@ -79,6 +79,7 @@ func TestMultiClient(t *testing.T) {
 			wg.Done()
 		}(keyList[idx % WRITE_TIMES])
 		if idx % 4 == 0 {
+			wg.Add(1)
 			randomBytes := common.GenerateRandomData(length + int64(idx*10))
 			go func(rb []byte){
 				k, err := clientPool[(idx % POOL_LENGTH) + 1].CreateAndWrite(rb)
@@ -86,6 +87,7 @@ func TestMultiClient(t *testing.T) {
 					t.Errorf("ERROR WRITE (WITH READ) - %v", err.Error())
 				}
 				keyMap.Store(k, rb)
+				wg.Done()
 			}(randomBytes)
 		}
 	}
