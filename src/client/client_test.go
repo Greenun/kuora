@@ -13,23 +13,28 @@ import (
 //var keyList = make([]common.HotKey, 0)
 var keyMap = make(map[common.HotKey][]byte, 0)
 
-const MASTER_ADDRESS = "127.0.0.1:40000"
+const (
+	MASTER_ADDRESS = "127.0.0.1:40000"
+	READ_TIMES = 100
+	WRITE_TIMES = 10
+	POOL_LENGTH = 30
+)
 
 var clientPool = make([]*Client, 0)
 var clientMap = make(map[*Client]common.HotKey)
 
 func TestMultiClient(t *testing.T) {
 	length := int64(1 << 19)
-	for i := 0; i < 30; i++ {
+	for i := 0; i < POOL_LENGTH; i++ {
 		clientPool = append(clientPool, NewClient(MASTER_ADDRESS))
 	}
 	wg := sync.WaitGroup{}
 	// Write Phase
-	for i := 0; i < 10; i++ {
+	for i := 0; i < WRITE_TIMES; i++ {
 		randomBytes := common.GenerateRandomData(length + int64(i*10))
 		wg.Add(1)
 		go func(idx int, rb []byte){
-			idx = idx % 30
+			idx = idx % POOL_LENGTH
 			key, err := clientPool[idx].CreateAndWrite(rb)
 			if err != nil {
 				t.Errorf("ERROR WRITE - %v", err.Error())
@@ -46,8 +51,8 @@ func TestMultiClient(t *testing.T) {
 	}
 	wg = sync.WaitGroup{}
 	// Read Phase
-	for _, i := range rand.Perm(100) {
-		idx := i % 30
+	for _, i := range rand.Perm(READ_TIMES) {
+		idx := i % POOL_LENGTH
 		wg.Add(1)
 		go func(key common.HotKey){
 			answer := keyMap[key]
@@ -62,7 +67,7 @@ func TestMultiClient(t *testing.T) {
 				t.Logf("Bytes Equal for %s", key)
 			}
 			wg.Done()
-		}(keyList[idx % 10])
+		}(keyList[idx % WRITE_TIMES])
 	}
 	wg.Wait()
 }
