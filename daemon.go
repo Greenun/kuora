@@ -29,7 +29,7 @@ func runDaemon(args []string) {
 	if len(args) < 2 {
 		logger.Info("Run Executor")
 		go func(){
-			Executor(common.ReplicaNum)
+			Executor(3) //common.ReplicaNum
 		}()
 		<- ch
 	}

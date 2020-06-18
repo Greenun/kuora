@@ -124,7 +124,7 @@ func (c *Client) ReadBlock(handle common.BlockHandle, offset common.Offset, buff
 		} else {
 			logger.Infof("Read Data From Node %v", locations[randomIndex])
 			copy(buffer, readResponse.Data) // dump bytes
-			logger.Infof("DATA: %v, %v, %v, %d", buffer, readResponse.Data, readResponse.ErrCode, readResponse.Length)
+			//logger.Infof("DATA: %v, %v, %v, %d", buffer, readResponse.Data, readResponse.ErrCode, readResponse.Length)
 			break
 		}
 	}

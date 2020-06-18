@@ -193,7 +193,8 @@ func (d *DataNode) WriteBlock(args ipc.WriteBlockArgs, response *ipc.WriteBlockR
 	d.RLock()
 	blockInfo, exist := d.blockMap[args.Handle]
 	d.RUnlock()
-	d.logger.Infof("Write Block %v", args.Data)
+	//d.logger.Infof("Write Block %v", args.Data)
+	d.logger.Infof("Write Block")
 	if !exist {
 		return fmt.Errorf("BLOCK DOES NOT EXIST - %d", args.Handle)
 	}
