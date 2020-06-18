@@ -3,6 +3,7 @@ package client
 import (
 	"bytes"
 	"common"
+	"fmt"
 	"math/rand"
 	"sync"
 	"testing"
@@ -11,12 +12,12 @@ import (
 //var c = NewClient("127.0.0.1:40000")
 
 //var keyList = make([]common.HotKey, 0)
-var keyMap = make(map[common.HotKey][]byte, 0)
-
+//var keyMap = make(map[common.HotKey][]byte, 0)
+var keyMap sync.Map
 const (
 	MASTER_ADDRESS = "127.0.0.1:40000"
-	READ_TIMES = 100
-	WRITE_TIMES = 10
+	READ_TIMES = 300
+	WRITE_TIMES = 20
 	POOL_LENGTH = 30
 )
 
@@ -24,6 +25,7 @@ var clientPool = make([]*Client, 0)
 var clientMap = make(map[*Client]common.HotKey)
 
 func TestMultiClient(t *testing.T) {
+	keyMap = sync.Map{}
 	length := int64(1 << 19)
 	for i := 0; i < POOL_LENGTH; i++ {
 		clientPool = append(clientPool, NewClient(MASTER_ADDRESS))
@@ -40,22 +42,30 @@ func TestMultiClient(t *testing.T) {
 				t.Errorf("ERROR WRITE - %v", err.Error())
 			}
 			clientMap[clientPool[idx]] = key
-			keyMap[key] = rb
+			//keyMap[key] = rb
+			keyMap.Store(key, rb)
 			wg.Done()
 		}(i, randomBytes)
 	}
 	wg.Wait()
 	keyList := make([]common.HotKey, 0)
-	for key, _ := range keyMap {
-		keyList = append(keyList, key)
-	}
+	//for key, _ := range keyMap {
+	//	keyList = append(keyList, key)
+	//}
+	keyMap.Range(func(k, v interface{}) bool{
+		key := fmt.Sprintf("%s", k)
+		keyList = append(keyList, common.HotKey(key))
+		return true
+	})
 	wg = sync.WaitGroup{}
 	// Read Phase
 	for _, i := range rand.Perm(READ_TIMES) {
 		idx := i % POOL_LENGTH
 		wg.Add(1)
 		go func(key common.HotKey){
-			answer := keyMap[key]
+			//answer := keyMap[key]
+			temp, _ := keyMap.Load(key)
+			answer, _ := temp.([]byte)
 			buffer := make([]byte, len(answer))
 			_, err := clientPool[idx].Read(key, 0, buffer)
 			if err != nil {
@@ -68,8 +78,35 @@ func TestMultiClient(t *testing.T) {
 			}
 			wg.Done()
 		}(keyList[idx % WRITE_TIMES])
+		if idx % 4 == 0 {
+			randomBytes := common.GenerateRandomData(length + int64(idx*10))
+			go func(rb []byte){
+				k, err := clientPool[(idx % POOL_LENGTH) + 1].CreateAndWrite(rb)
+				if err != nil {
+					t.Errorf("ERROR WRITE (WITH READ) - %v", err.Error())
+				}
+				keyMap.Store(k, rb)
+			}(randomBytes)
+		}
 	}
 	wg.Wait()
+}
+
+func Test_DeleteAll(t *testing.T) {
+	// delete all
+	var c = NewClient("127.0.0.1:40000")
+	keys, err := c.ListKeys()
+	if err != nil {
+		t.Error("LIST ERROR")
+		t.Fail()
+	}
+	for _, key := range keys {
+		err := c.Delete(key)
+		if err != nil {
+			t.Errorf("ERROR - %s", err.Error())
+			t.Fail()
+		}
+	}
 }
 
 //func TestFlow(t *testing.T) {
@@ -173,18 +210,3 @@ func TestMultiClient(t *testing.T) {
 //	}
 //}
 //
-//func Test_DeleteAll(t *testing.T) {
-//	// delete all
-//	keys, err := c.ListKeys()
-//	if err != nil {
-//		t.Error("LIST ERROR")
-//		t.Fail()
-//	}
-//	for _, key := range keys {
-//		err := c.Delete(key)
-//		if err != nil {
-//			t.Errorf("ERROR - %s", err.Error())
-//			t.Fail()
-//		}
-//	}
-//}

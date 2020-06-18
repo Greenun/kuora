@@ -67,11 +67,11 @@ func (c *Client) Read(key common.HotKey, offset common.Offset, buffer []byte) (i
 			return -1, fmt.Errorf("Read after EOF Error")
 		}
 		handle := handles[idx]
-		logger.Infof("O Offset: %d, BlockSize: %d, key: %s, handle: %d", offset, common.BlockSize, key, handle)
-		logger.Infof("Index: %d, Offset: %d", idx, blockOffset)
-		logger.Infof("Buffer Length: %d, Current: %d", len(buffer), current)
+		//logger.Infof("O Offset: %d, BlockSize: %d, key: %s, handle: %d", offset, common.BlockSize, key, handle)
+		//logger.Infof("Index: %d, Offset: %d", idx, blockOffset)
+		//logger.Infof("Buffer Length: %d, Current: %d", len(buffer), current)
 		readNum, err := c.ReadBlock(handle, blockOffset, blockBuffer)
-		logger.Infof("Read Number: %d ", readNum)
+		//logger.Infof("Read Number: %d ", readNum)
 		if err != nil {
 			logger.Warnf("Error : %v", err)
 			return -1, fmt.Errorf("READ ERROR - %v", err.Error())
@@ -122,7 +122,7 @@ func (c *Client) ReadBlock(handle common.BlockHandle, offset common.Offset, buff
 			logger.Errorf("ERROR OCCURRED DURING READ BLOCK %d from %s - %v", handle, locations[randomIndex], err.Error())
 			//fmt.Errorf("ERROR OCCURRED DURING READ BLOCK %d from %s", handle, locations[randomIndex])
 		} else {
-			logger.Infof("Read Data From Node %v", locations[randomIndex])
+			//logger.Infof("Read Data From Node %v", locations[randomIndex])
 			copy(buffer, readResponse.Data) // dump bytes
 			//logger.Infof("DATA: %v, %v, %v, %d", buffer, readResponse.Data, readResponse.ErrCode, readResponse.Length)
 			break
@@ -193,7 +193,7 @@ func (c *Client) WriteBlock(handle common.BlockHandle, offset common.Offset, dat
 	if err != nil {
 		return fmt.Errorf("PRIMARY DOES NOT EXIST IN LOCATIONS")
 	}
-	logger.Infof("Primary Address - %s", resp.Primary)
+	//logger.Infof("Primary Address - %s", resp.Primary)
 	writeErr := ipc.Single(resp.Primary, "DataNode.WriteBlock", ipc.WriteBlockArgs{
 		Handle:      handle,
 		Data:        data,
