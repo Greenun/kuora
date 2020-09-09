@@ -1,5 +1,6 @@
 # kuora
 graduation project
+etude.. T_T
 
 Requirements
 - github.com/sirupsen/logrus
