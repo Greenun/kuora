@@ -1,6 +1,6 @@
 ### kuora
 
-Go Project (ETUDE)
+Go Project (FOR PRACTICE...)
 
 Implementation of Distributed File Storage (Not All Features)
 
